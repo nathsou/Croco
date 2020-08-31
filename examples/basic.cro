@@ -1,0 +1,37 @@
+Collatz 0 = Error
+Collatz 1 = [1]
+Collatz n = n : Collatz (if n % 2 == 0 then n / 2 else 3 * n + 1)
+
+And True True = True
+And a b = False
+
+Add a 0 = a
+Add 0 b = b
+Add (S a) b = S (Add a b)
+Add a (S b) = S (Add a b)
+
+Len lst = Len' lst 0
+Len' [] len = len
+Len' (h:tl) len = Len' tl (len + 1)
+
+Max (h:tl) = Max' tl h
+Max' [] max = max
+Max' (h:tl) currentMax = Max' tl (if h > currentMax then h else currentMax)
+
+Rev lst = Rev' lst []
+Rev' [] rev = rev
+Rev' (h:tl) rev = Rev' tl (h:rev)
+
+Range from to = Range' from to []
+Range' to to rng = Rev (to : rng)
+Range' from to acc = Range' (from + 1) to (from:acc)
+
+Map f lst = Map' f lst []
+Map' f [] mapped = Rev mapped
+Map' f (h:tl) acc =  Map' f tl ((App f h) : acc)
+
+App Inc n = n + 1
+
+App CollatzLen n = Len (Collatz n)
+
+Main = Max (Map CollatzLen (Range 1 100))

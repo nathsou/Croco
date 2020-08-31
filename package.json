@@ -1,0 +1,24 @@
+{
+  "name": "croco",
+  "version": "0.0.1",
+  "description": "Basic purely functional programming language based on term rewriting",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "girafe": "^0.0.5",
+    "nearley": "^2.19.6"
+  },
+  "devDependencies": {
+    "@types/nearley": "^2.11.1",
+    "@types/node": "^14.6.2"
+  },
+  "keywords": [
+    "TRS",
+    "Functional",
+    "Programming"
+  ],
+  "author": "Nathan Soufflet",
+  "license": "MIT"
+}
