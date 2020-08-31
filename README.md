@@ -1,6 +1,6 @@
 ### Croco
 
-A basic purely functionnal programming language which compiles down to 
+A basic purely functional programming language which compiles down to 
 [girafe](https://github.com/nathsou/Girafe/).
 
 ### Usage
