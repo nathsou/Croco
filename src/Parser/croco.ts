@@ -3,9 +3,48 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
+declare var lbracket: any;
+declare var rbracket: any;
+declare var if_: any;
+declare var then: any;
+declare var else_: any;
+declare var symb: any;
+declare var nil: any;
+declare var varname: any;
+declare var nl: any;
 
-interface NearleyToken {
-  value: any;
+const moo = require('moo');
+
+const lexer = moo.compile({
+  ws: /[ \t]+/,
+  if_: 'if',
+  then: 'then',
+  else_: 'else',
+  varname: /[a-z]+[a-zA-Z0-9]*/,
+  symb: /[A-Z0-9@][a-zA-Z0-9']*/,
+  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
+  comma: ',',
+  assign: '=',
+  lparen: '(',
+  rparen: ')',
+  nil: '[]',
+  lbracket: '[',
+  rbracket: ']',
+  nl: { match: /\n/, lineBreaks: true },
+});
+
+// ignore whitespaces and newlines in output tokenization
+lexer.next = (next => () => {
+	let tok;
+	while ((tok = next.call(lexer)) && tok.type === 'ws');
+    // console.log(tok);
+	return tok;
+})(lexer.next);
+
+const Fun = (name, ...args) => ({ type: 'fun', name, args });
+const App = (f, x) => Fun('app', f, x);
+
+interface NearleyToken {  value: any;
   [key: string]: any;
 };
 
@@ -32,86 +71,49 @@ interface Grammar {
 };
 
 const grammar: Grammar = {
-  Lexer: undefined,
+  Lexer: lexer,
   ParserRules: [
-    { "name": "main", "symbols": ["rules"], "postprocess": id },
-    { "name": "symb$ebnf$1", "symbols": [] },
-    { "name": "symb$ebnf$1", "symbols": ["symb$ebnf$1", /[a-zA-Z0-9\']/], "postprocess": (d) => d[0].concat([d[1]]) },
-    { "name": "symb", "symbols": [/[A-Z0-9@]/, "symb$ebnf$1"], "postprocess": ([h, tl]) => h + tl.join('') },
-    { "name": "term", "symbols": ["var"], "postprocess": id },
-    { "name": "term", "symbols": ["fun"], "postprocess": id },
-    { "name": "var", "symbols": ["varname"], "postprocess": ([v]) => ({ type: 'var', name: v }) },
-    { "name": "varname$ebnf$1", "symbols": [] },
-    { "name": "varname$ebnf$1", "symbols": ["varname$ebnf$1", /[a-zA-z0-9]/], "postprocess": (d) => d[0].concat([d[1]]) },
-    { "name": "varname", "symbols": [/[a-z]/, "varname$ebnf$1"], "postprocess": ([h, tl]) => h + tl.join('') },
-    { "name": "nullary_fun", "symbols": ["symb"], "postprocess": ([f]) => ({ type: 'fun', name: f, args: [] }) },
-    { "name": "fun", "symbols": ["nullary_fun"], "postprocess": id },
-    { "name": "fun", "symbols": ["fun_with_args"], "postprocess": id },
-    { "name": "fun_with_args", "symbols": ["symb", "_+", "args"], "postprocess": ([f, _, args]) => ({ type: 'fun', name: f, args }) },
-    { "name": "single_arg", "symbols": ["var"], "postprocess": id },
-    { "name": "single_arg", "symbols": ["nullary_fun"], "postprocess": id },
-    { "name": "single_arg$string$1", "symbols": [{ "literal": "[" }, { "literal": "]" }], "postprocess": (d) => d.join('') },
-    { "name": "single_arg", "symbols": ["single_arg$string$1"], "postprocess": () => ({ type: 'fun', name: 'Nil', args: [] }) },
-    { "name": "single_arg", "symbols": [{ "literal": "(" }, "_", "expr", "_", { "literal": ")" }], "postprocess": d => d[2] },
-    { "name": "args", "symbols": ["single_arg"], "postprocess": ([arg]) => [arg] },
-    { "name": "args", "symbols": ["args", "_+", "single_arg"], "postprocess": ([as, _, a]) => [...as, a] },
-    {
-      "name": "rule", "symbols": ["fun", "_", { "literal": "=" }, "_", "expr"], "postprocess": d => {
-        const { name, args } = d[0];
-        return { type: 'rule', name, args, body: d[4] };
-      }
-    },
-    { "name": "expr", "symbols": ["list"], "postprocess": id },
-    { "name": "list", "symbols": ["nil"], "postprocess": id },
-    { "name": "consed_exprs", "symbols": ["expr"], "postprocess": ([e]) => ({ type: 'fun', name: ':', args: [e, { type: 'fun', name: 'Nil', args: [] }] }) },
-    { "name": "consed_exprs", "symbols": ["consed_exprs", "_", { "literal": "," }, "_", "expr"], "postprocess": d => ({ type: 'fun', name: ':', args: [d[0], d[4]] }) },
-    { "name": "nil$string$1", "symbols": [{ "literal": "[" }, { "literal": "]" }], "postprocess": (d) => d.join('') },
-    { "name": "nil", "symbols": ["nil$string$1"], "postprocess": () => ({ type: 'fun', name: 'Nil', args: [] }) },
-    { "name": "list", "symbols": [{ "literal": "[" }, "_", "consed_exprs", "_", { "literal": "]" }], "postprocess": d => d[2] },
-    { "name": "list", "symbols": ["If"], "postprocess": id },
-    { "name": "If$string$1", "symbols": [{ "literal": "i" }, { "literal": "f" }], "postprocess": (d) => d.join('') },
-    { "name": "If$string$2", "symbols": [{ "literal": "t" }, { "literal": "h" }, { "literal": "e" }, { "literal": "n" }], "postprocess": (d) => d.join('') },
-    { "name": "If$string$3", "symbols": [{ "literal": "e" }, { "literal": "l" }, { "literal": "s" }, { "literal": "e" }], "postprocess": (d) => d.join('') },
-    {
-      "name": "If", "symbols": ["If$string$1", "_", "expr", "_", "If$string$2", "_", "expr", "_", "If$string$3", "_", "expr"], "postprocess":
-        d => ({ type: 'fun', name: 'if', args: [d[2], d[6], d[10]] })
-    },
-    { "name": "If", "symbols": ["Comp"], "postprocess": id },
-    { "name": "P", "symbols": [{ "literal": "(" }, "_", "expr", "_", { "literal": ")" }], "postprocess": d => d[2] },
-    { "name": "P", "symbols": ["term"], "postprocess": id },
-    { "name": "Cons", "symbols": ["P", "_", { "literal": ":" }, "_", "P"], "postprocess": d => ({ type: 'fun', name: ':', args: [d[0], d[4]] }) },
-    { "name": "Cons", "symbols": ["P"], "postprocess": id },
-    { "name": "Pow$string$1", "symbols": [{ "literal": "*" }, { "literal": "*" }], "postprocess": (d) => d.join('') },
-    { "name": "Pow", "symbols": ["Cons", "_", "Pow$string$1", "_", "Cons"], "postprocess": d => ({ type: 'fun', name: '@pow', args: [d[0], d[4]] }) },
-    { "name": "Pow", "symbols": ["Cons"], "postprocess": id },
-    { "name": "MD", "symbols": ["MD", "_", { "literal": "*" }, "_", "Pow"], "postprocess": d => ({ type: 'fun', name: '@mult', args: [d[0], d[4]] }) },
-    { "name": "MD", "symbols": ["MD", "_", { "literal": "/" }, "_", "Pow"], "postprocess": d => ({ type: 'fun', name: '@div', args: [d[0], d[4]] }) },
-    { "name": "MD", "symbols": ["MD", "_", { "literal": "%" }, "_", "Pow"], "postprocess": d => ({ type: 'fun', name: '@mod', args: [d[0], d[4]] }) },
-    { "name": "MD", "symbols": ["Pow"], "postprocess": id },
-    { "name": "AS", "symbols": ["AS", "_", { "literal": "+" }, "_", "MD"], "postprocess": d => ({ type: 'fun', name: '@add', args: [d[0], d[4]] }) },
-    { "name": "AS", "symbols": ["AS", "_", { "literal": "-" }, "_", "MD"], "postprocess": d => ({ type: 'fun', name: '@sub', args: [d[0], d[4]] }) },
-    { "name": "AS", "symbols": ["MD"], "postprocess": id },
-    { "name": "Comp$string$1", "symbols": [{ "literal": "=" }, { "literal": "=" }], "postprocess": (d) => d.join('') },
-    { "name": "Comp", "symbols": ["Comp", "_", "Comp$string$1", "_", "AS"], "postprocess": d => ({ type: 'fun', name: '@equ', args: [d[0], d[4]] }) },
-    { "name": "Comp", "symbols": ["Comp", "_", { "literal": ">" }, "_", "AS"], "postprocess": d => ({ type: 'fun', name: '@gtr', args: [d[0], d[4]] }) },
-    { "name": "Comp$string$2", "symbols": [{ "literal": ">" }, { "literal": "=" }], "postprocess": (d) => d.join('') },
-    { "name": "Comp", "symbols": ["Comp", "_", "Comp$string$2", "_", "AS"], "postprocess": d => ({ type: 'fun', name: '@geq', args: [d[0], d[4]] }) },
-    { "name": "Comp", "symbols": ["Comp", "_", { "literal": "<" }, "_", "AS"], "postprocess": d => ({ type: 'fun', name: '@lss', args: [d[0], d[4]] }) },
-    { "name": "Comp$string$3", "symbols": [{ "literal": "<" }, { "literal": "=" }], "postprocess": (d) => d.join('') },
-    { "name": "Comp", "symbols": ["Comp", "_", "Comp$string$3", "_", "AS"], "postprocess": d => ({ type: 'fun', name: '@leq', args: [d[0], d[4]] }) },
-    { "name": "Comp", "symbols": ["AS"], "postprocess": id },
-    { "name": "rules", "symbols": ["non_empty_rules"], "postprocess": id },
-    { "name": "non_empty_rules", "symbols": ["_", "rule", "_"], "postprocess": d => [d[1]] },
-    { "name": "non_empty_rules", "symbols": ["non_empty_rules", "nl", "rule"], "postprocess": ([rs, _, r]) => [...rs, r] },
-    { "name": "_$ebnf$1", "symbols": [] },
-    { "name": "_$ebnf$1", "symbols": ["_$ebnf$1", /[\s]/], "postprocess": (d) => d[0].concat([d[1]]) },
-    { "name": "_", "symbols": ["_$ebnf$1"], "postprocess": () => null },
-    { "name": "_+$ebnf$1", "symbols": [/[\s]/] },
-    { "name": "_+$ebnf$1", "symbols": ["_+$ebnf$1", /[\s]/], "postprocess": (d) => d[0].concat([d[1]]) },
-    { "name": "_+", "symbols": ["_+$ebnf$1"], "postprocess": () => null },
-    { "name": "nl$ebnf$1", "symbols": [{ "literal": "\n" }] },
-    { "name": "nl$ebnf$1", "symbols": ["nl$ebnf$1", { "literal": "\n" }], "postprocess": (d) => d[0].concat([d[1]]) },
-    { "name": "nl", "symbols": ["nl$ebnf$1"], "postprocess": () => null }
+    {"name": "main", "symbols": ["rules"], "postprocess": id},
+    {"name": "expr", "symbols": ["app"], "postprocess": id},
+    {"name": "app", "symbols": ["app", "cons"], "postprocess": ([lhs, rhs]) => App(lhs, rhs)},
+    {"name": "app", "symbols": ["cons"], "postprocess": id},
+    {"name": "cons", "symbols": ["cons", {"literal":":"}, "list"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
+    {"name": "cons", "symbols": ["list"], "postprocess": id},
+    {"name": "list", "symbols": [(lexer.has("lbracket") ? {type: "lbracket"} : lbracket), "list_elems", (lexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": d => d[1]},
+    {"name": "list_elems", "symbols": ["expr"], "postprocess": ([e]) => Fun(':', e, Fun('Nil'))},
+    {"name": "list_elems", "symbols": ["expr", {"literal":","}, "list_elems"], "postprocess": ([e, _, es]) => Fun(':', e, es)},
+    {"name": "list", "symbols": ["if"], "postprocess": id},
+    {"name": "if", "symbols": [(lexer.has("if_") ? {type: "if_"} : if_), "expr", (lexer.has("then") ? {type: "then"} : then), "expr", (lexer.has("else_") ? {type: "else_"} : else_), "expr"], "postprocess":  
+        ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
+        },
+    {"name": "if", "symbols": ["addsub"], "postprocess": id},
+    {"name": "addsub", "symbols": ["addsub", {"literal":"+"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@add", a, b)},
+    {"name": "addsub", "symbols": ["addsub", {"literal":"-"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@sub", a, b)},
+    {"name": "addsub", "symbols": ["multdiv"], "postprocess": id},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"*"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mult", a, b)},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"/"}, "pow"], "postprocess": ([a, _, b]) => Fun("@div", a, b)},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"%"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mod", a, b)},
+    {"name": "multdiv", "symbols": ["pow"], "postprocess": id},
+    {"name": "pow", "symbols": ["pow", {"literal":"**"}, "comp"], "postprocess": ([a, _, b]) => Fun("**", a, b)},
+    {"name": "pow", "symbols": ["comp"], "postprocess": id},
+    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "cons"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "cons"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">"}, "cons"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">="}, "cons"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "cons"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
+    {"name": "comp", "symbols": ["term"], "postprocess": id},
+    {"name": "term", "symbols": [(lexer.has("symb") ? {type: "symb"} : symb)], "postprocess": ([s]) => Fun(s.value)},
+    {"name": "term", "symbols": ["var"], "postprocess": id},
+    {"name": "term", "symbols": [(lexer.has("nil") ? {type: "nil"} : nil)], "postprocess": () => Fun('Nil')},
+    {"name": "term", "symbols": ["paren"], "postprocess": id},
+    {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
+    {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},
+    {"name": "rule", "symbols": ["expr", {"literal":"="}, "expr"], "postprocess": ([lhs, _, rhs]) => ({ type: 'rule', lhs, rhs })},
+    {"name": "rules", "symbols": ["non_empty_rules"], "postprocess": id},
+    {"name": "non_empty_rules", "symbols": ["rule"], "postprocess": d => [d[0]]},
+    {"name": "non_empty_rules$ebnf$1", "symbols": [(lexer.has("nl") ? {type: "nl"} : nl)]},
+    {"name": "non_empty_rules$ebnf$1", "symbols": ["non_empty_rules$ebnf$1", (lexer.has("nl") ? {type: "nl"} : nl)], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "non_empty_rules", "symbols": ["non_empty_rules", "non_empty_rules$ebnf$1", "rule"], "postprocess": ([rs, _, r]) => [...rs, r]}
   ],
   ParserStart: "main",
 };

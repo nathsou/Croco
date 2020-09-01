@@ -1,89 +1,92 @@
 @preprocessor typescript
 
+@{%
+const moo = require('moo');
+
+const lexer = moo.compile({
+  ws: /[ \t]+/,
+  if_: 'if',
+  then: 'then',
+  else_: 'else',
+  varname: /[a-z]+[a-zA-Z0-9]*/,
+  symb: /[A-Z0-9@][a-zA-Z0-9']*/,
+  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
+  comma: ',',
+  assign: '=',
+  lparen: '(',
+  rparen: ')',
+  nil: '[]',
+  lbracket: '[',
+  rbracket: ']',
+  nl: { match: /\n/, lineBreaks: true },
+});
+
+// ignore whitespaces and newlines in output tokenization
+lexer.next = (next => () => {
+	let tok;
+	while ((tok = next.call(lexer)) && tok.type === 'ws');
+    // console.log(tok);
+	return tok;
+})(lexer.next);
+
+const Fun = (name, ...args) => ({ type: 'fun', name, args });
+const App = (f, x) => Fun('app', f, x);
+%}
+
+@lexer lexer
+
 main -> rules {% id %}
 
-symb -> [A-Z0-9@] [a-zA-Z0-9\']:* {% ([h, tl]) => h + tl.join('') %}
+expr -> app {% id %}
 
-term -> var {% id %}
-term -> fun {% id %}
-var -> varname {% ([v]) => ({ type: 'var', name: v }) %}
+app -> app cons {% ([lhs, rhs]) => App(lhs, rhs) %}
+app -> cons {% id %}
 
-varname -> [a-z] [a-zA-z0-9]:* {% ([h, tl]) => h + tl.join('') %}
+cons -> cons ":" list {% ([h, _, tl]) => Fun(':', h, tl) %}
+cons -> list {% id %}
 
-nullary_fun -> symb {% ([f]) => ({ type: 'fun', name: f, args: [] }) %}
-fun -> nullary_fun {% id %}
-fun -> fun_with_args {% id %}
-
-fun_with_args -> symb _+ args {% ([f, _, args]) => ({ type: 'fun', name: f, args }) %}
-
-single_arg -> var {% id %}
-single_arg -> nullary_fun {% id %}
-single_arg -> "[]" {% () => ({ type: 'fun', name: 'Nil', args: [] }) %}
-single_arg -> "(" _ expr _ ")" {% d => d[2] %}
-
-args -> single_arg {% ([arg]) => [arg] %}
-args -> args _+ single_arg {% ([as, _, a]) => [...as, a] %}
-
-rule -> fun _ "=" _ expr {% d => {
-    const { name, args } = d[0];
-    return { type: 'rule', name, args, body: d[4] };
-} %}
-
-expr -> list {% id %}
-
-# lists
-list -> nil {% id %}
-
-consed_exprs -> expr {% ([e]) => ({ type: 'fun', name: ':', args: [e, { type: 'fun', name: 'Nil', args: [] }] }) %}
-consed_exprs -> consed_exprs _ "," _ expr {% d => ({ type: 'fun', name: ':', args: [d[0], d[4]] }) %}
-
-nil -> "[]" {% () => ({ type: 'fun', name: 'Nil', args: [] }) %}
-
-list -> "[" _ consed_exprs _ "]" {% d => d[2] %}
-list -> If {% id %}
+list -> %lbracket list_elems %rbracket {% d => d[1] %}
+list_elems -> expr {% ([e]) => Fun(':', e, Fun('Nil')) %}
+list_elems -> expr "," list_elems {% ([e, _, es]) => Fun(':', e, es) %}
+list -> if {% id %}
 
 # if expression
-If -> "if" _ expr _ "then" _ expr _ "else" _ expr {% 
-    d => ({ type: 'fun', name: 'if', args: [d[2], d[6], d[10]] })
+if -> %if_ expr %then expr %else_ expr {% 
+([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
 %}
-If -> Comp {% id %}
+if -> addsub {% id %}
 
-# # Parentheses
-P -> "(" _ expr _ ")" {% d => d[2] %}
-P -> term {% id %}
+addsub -> addsub "+" multdiv {% ([a, _, b]) => Fun("@add", a, b) %}
+addsub -> addsub "-" multdiv {% ([a, _, b]) => Fun("@sub", a, b) %}
+addsub -> multdiv {% id %}
 
-Cons -> P _ ":" _ P {% d => ({ type: 'fun', name: ':', args: [d[0], d[4]] }) %}
-Cons -> P {% id %}
+multdiv -> multdiv "*" pow {% ([a, _, b]) => Fun("@mult", a, b) %}
+multdiv -> multdiv "/" pow {% ([a, _, b]) => Fun("@div", a, b) %}
+multdiv -> multdiv "%" pow {% ([a, _, b]) => Fun("@mod", a, b) %}
+multdiv -> pow {% id %}
 
-# Exponents
-Pow -> Cons _ "**" _ Cons {% d => ({ type: 'fun', name: '@pow', args: [d[0], d[4]] }) %}
-    | Cons {% id %}
+pow -> pow "**" comp {% ([a, _, b]) => Fun("**", a, b) %}
+pow -> comp {% id %}
 
-# Multiplication and division
-MD -> MD _ "*" _ Pow  {% d => ({ type: 'fun', name: '@mult', args: [d[0], d[4]] }) %}
-    | MD _ "/" _ Pow  {% d => ({ type: 'fun', name: '@div', args: [d[0], d[4]] }) %}
-    | MD _ "%" _ Pow  {% d => ({ type: 'fun', name: '@mod', args: [d[0], d[4]] }) %}
-    | Pow {% id %}
+comp -> comp "<"  cons {% ([a, _, b]) => Fun("@lss", a, b) %}
+comp -> comp "<=" cons {% ([a, _, b]) => Fun("@leq", a, b) %}
+comp -> comp ">"  cons {% ([a, _, b]) => Fun("@gtr", a, b) %}
+comp -> comp ">=" cons {% ([a, _, b]) => Fun("@geq", a, b) %}
+comp -> comp "==" cons {% ([a, _, b]) => Fun("@equ", a, b) %}
+comp -> term {% id %}
 
-# Addition and subtraction
-AS -> AS _ "+" _ MD {% d => ({ type: 'fun', name: '@add', args: [d[0], d[4]] }) %}
-AS -> AS _ "-" _ MD {% d => ({ type: 'fun', name: '@sub', args: [d[0], d[4]] }) %}
-    | MD {% id %}
+term -> %symb {% ([s]) => Fun(s.value) %}
+term -> var {% id %}
+term -> %nil {% () => Fun('Nil') %}
+term -> paren {% id %}
 
-Comp -> Comp _ "==" _ AS {% d => ({ type: 'fun', name: '@equ', args: [d[0], d[4]] }) %}
-Comp -> Comp _ ">" _ AS {% d => ({ type: 'fun', name: '@gtr', args: [d[0], d[4]] }) %}
-Comp -> Comp _ ">=" _ AS {% d => ({ type: 'fun', name: '@geq', args: [d[0], d[4]] }) %}
-Comp -> Comp _ "<" _ AS {% d => ({ type: 'fun', name: '@lss', args: [d[0], d[4]] }) %}
-Comp -> Comp _ "<=" _ AS {% d => ({ type: 'fun', name: '@leq', args: [d[0], d[4]] }) %}
-Comp -> AS {% id %}
+paren -> "(" expr ")" {% d => d[1] %}
+
+var -> %varname {% ([v]) => ({ type: 'var', name: v.value }) %}
+
+rule -> expr "=" expr {% ([lhs, _, rhs]) => ({ type: 'rule', lhs, rhs }) %}
 
 # rules -> _ null _ {% () => [] %}
 rules -> non_empty_rules {% id %}
-non_empty_rules -> _ rule _ {% d => [d[1]] %}
-non_empty_rules -> non_empty_rules nl rule {% ([rs, _, r]) => [...rs, r] %}
-
-# Whitespace. The important thing here is that the postprocessor
-# is a null-returning function. This is a memory efficiency trick.
-_ -> [\s]:* {% () => null %}
-_+ -> [\s]:+ {% () => null %}
-nl -> "\n":+ {% () => null %}
+non_empty_rules -> rule {% d => [d[0]] %}
+non_empty_rules -> non_empty_rules %nl:+ rule {% ([rs, _, r]) => [...rs, r] %}

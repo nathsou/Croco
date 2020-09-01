@@ -1,6 +1,6 @@
 import * as nearley from 'nearley';
-import { Prog } from './Expr';
 import grammar from './croco';
+import { Prog, showProg } from './Expr';
 
 export const parse = (source: string): Prog => {
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -9,12 +9,12 @@ export const parse = (source: string): Prog => {
 
     if (parser.results.length > 1) {
         throw new Error(
-            `grammar is ambiguous, got ${parser.results.length} possible parses:
-            ${parser.results.map(p => JSON.stringify(p)).join('\n\n')}`
+            `grammar is ambiguous, got ${parser.results.length} possible parses: \n\n`
+            + parser.results.map(showProg).join('\n\n') + '\n'
         );
     }
 
-    // console.log(parser.results[0][0]);
+    console.log(parser.results.map(showProg).join('\n\n') + '\n');
 
     return parser.results[0];
 };

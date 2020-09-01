@@ -14,7 +14,7 @@ const source = readFileSync(src).toString('utf-8');
 
 const trs = compile(parse(source));
 
-// console.log(showTRS(trs));
+console.log(showTRS(trs));
 
 const log = (msg: string) => { console.log(msg); };
 const externals = mergeExternals(arithmeticExternals, metaExternals(log))('native');

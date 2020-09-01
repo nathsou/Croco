@@ -11,8 +11,8 @@ $ croco.ts source.cro
 
 ### Todo
 
-- [] allow lowercase function names
-- [] add lambda expressions
-- [] add let .. in expressions
-- [] support function application
-- [] support IO actions using monads
+- [ ] allow lowercase function names
+- [ ] add lambda expressions
+- [ ] add let .. in expressions
+- [x] support function application
+- [ ] support IO actions using monads

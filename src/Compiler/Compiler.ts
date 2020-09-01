@@ -1,4 +1,4 @@
-import { mapify, TRS, useIf, compile as grfCompile, defaultPasses, isLeft, Left, unwrap } from 'girafe';
+import { compile as grfCompile, defaultPasses, isOk, mapify, TRS, unwrap, useIf } from 'girafe';
 import { grfRuleOf, Prog } from "../Parser/Expr";
 
 export const compile = (rules: Prog): TRS => {
@@ -7,7 +7,7 @@ export const compile = (rules: Prog): TRS => {
 
     const res = grfCompile(trs, ...defaultPasses);
 
-    if (isLeft(res)) {
+    if (isOk(res)) {
         return unwrap(res);
     } else {
         console.error(unwrap(res).join('\n'));
