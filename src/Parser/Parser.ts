@@ -14,7 +14,7 @@ export const parse = (source: string): Prog => {
         );
     }
 
-    console.log(parser.results.map(showProg).join('\n\n') + '\n');
+    // console.log(parser.results.map(showProg).join('\n\n') + '\n');
 
     return parser.results[0];
 };

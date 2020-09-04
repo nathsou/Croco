@@ -1,8 +1,8 @@
-import { fun, isFun, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm } from 'girafe';
+import { fun, isFun, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm, decons, isVar } from 'girafe';
 
-export type Prog = RuleDecl[];
+export type Prog<E = Expr> = RuleDecl<E>[];
 export type Decl = RuleDecl;
-export type Expr = Term;
+export type Expr = Term | LetInExpr;
 
 export type Term = Var | Fun;
 
@@ -17,10 +17,17 @@ export type Fun = {
     args: Term[]
 };
 
-export type RuleDecl = {
-    type: 'rule',
-    lhs: Expr,
+export type LetInExpr = {
+    type: 'let_in',
+    x: Term,
+    val: Expr,
     rhs: Expr
+};
+
+export type RuleDecl<E = Expr> = {
+    type: 'rule',
+    lhs: E,
+    rhs: E
 };
 
 export const grfTermOf = (t: Term): grfTerm => {
@@ -28,7 +35,7 @@ export const grfTermOf = (t: Term): grfTerm => {
     return fun(t.name, ...t.args.map(grfTermOf));
 };
 
-export const grfRuleOf = (rule: RuleDecl): grfRule => {
+export const grfRuleOf = (rule: RuleDecl<Term>): grfRule => {
     const lhs = grfTermOf(rule.lhs);
 
     if (isFun(lhs)) {
@@ -44,11 +51,40 @@ export const showTerm = (term: Term): string => {
     return `(${term.name} ${term.args.map(showTerm).join(' ')})`;
 };
 
+export const postprocessTerm = (term: grfTerm): string => {
+    if (isVar(term)) return term;
+    if (term.args.length === 0) return term.name;
+
+    switch (term.name) {
+        case 'Nil':
+            return '[]';
+        case ':':
+            const [h, tl] = term.args;
+            return `[${postprocessList(h, tl)}]`;
+        default:
+            return grfShowterm(term);
+    }
+};
+
+export const postprocessList = (head: grfTerm, tail: grfTerm): string => {
+    if (isVar(tail) || (tail.name !== ':' && tail.name !== 'Nil')) {
+        throw new Error(`Expected ':' or 'Nil' at the tail of a list, got: ${grfShowterm(tail)}`);
+    }
+
+    if (tail.name === 'Nil') return postprocessTerm(head);
+
+    const [h, tl] = tail.args;
+
+    return `${postprocessTerm(head)}, ${postprocessList(h, tl)}`
+};
+
 export const showExpr = (expr: Expr): string => {
     switch (expr.type) {
         case 'fun':
         case 'var':
             return showTerm(expr);
+        case 'let_in':
+            return `let ${showTerm(expr.x)} = ${showExpr(expr.val)} in ${showExpr(expr.rhs)}`;
     }
 };
 

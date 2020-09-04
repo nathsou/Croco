@@ -8,6 +8,8 @@ const lexer = moo.compile({
   if_: 'if',
   then: 'then',
   else_: 'else',
+  let_: 'let',
+  in_: 'in',
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
@@ -31,6 +33,7 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
+const LetIn = (x, val, rhs) => ({ type: 'let_in', x, val, rhs });
 %}
 
 @lexer lexer
@@ -48,10 +51,13 @@ cons -> list {% id %}
 list -> %lbracket list_elems %rbracket {% d => d[1] %}
 list_elems -> expr {% ([e]) => Fun(':', e, Fun('Nil')) %}
 list_elems -> expr "," list_elems {% ([e, _, es]) => Fun(':', e, es) %}
-list -> if {% id %}
+list -> let_in {% id %}
+
+let_in -> "let" expr "=" expr "in" expr {% d => LetIn(d[1], d[3], d[5]) %}
+let_in -> if {% id %}
 
 # if expression
-if -> %if_ expr %then expr %else_ expr {% 
+if -> "if" expr "then" expr "else" expr {% 
 ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
 %}
 if -> addsub {% id %}
@@ -84,7 +90,7 @@ paren -> "(" expr ")" {% d => d[1] %}
 
 var -> %varname {% ([v]) => ({ type: 'var', name: v.value }) %}
 
-rule -> expr "=" expr {% ([lhs, _, rhs]) => ({ type: 'rule', lhs, rhs }) %}
+rule -> expr "=" %nl:* expr {% ([lhs, _eq, _nls, rhs]) => ({ type: 'rule', lhs, rhs }) %}
 
 # rules -> _ null _ {% () => [] %}
 rules -> non_empty_rules {% id %}

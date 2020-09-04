@@ -5,9 +5,6 @@
 function id(d: any[]): any { return d[0]; }
 declare var lbracket: any;
 declare var rbracket: any;
-declare var if_: any;
-declare var then: any;
-declare var else_: any;
 declare var symb: any;
 declare var nil: any;
 declare var varname: any;
@@ -20,6 +17,8 @@ const lexer = moo.compile({
   if_: 'if',
   then: 'then',
   else_: 'else',
+  let_: 'let',
+  in_: 'in',
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
@@ -43,6 +42,7 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
+const LetIn = (x, val, rhs) => ({ type: 'let_in', x, val, rhs });
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -82,8 +82,10 @@ const grammar: Grammar = {
     {"name": "list", "symbols": [(lexer.has("lbracket") ? {type: "lbracket"} : lbracket), "list_elems", (lexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": d => d[1]},
     {"name": "list_elems", "symbols": ["expr"], "postprocess": ([e]) => Fun(':', e, Fun('Nil'))},
     {"name": "list_elems", "symbols": ["expr", {"literal":","}, "list_elems"], "postprocess": ([e, _, es]) => Fun(':', e, es)},
-    {"name": "list", "symbols": ["if"], "postprocess": id},
-    {"name": "if", "symbols": [(lexer.has("if_") ? {type: "if_"} : if_), "expr", (lexer.has("then") ? {type: "then"} : then), "expr", (lexer.has("else_") ? {type: "else_"} : else_), "expr"], "postprocess":  
+    {"name": "list", "symbols": ["let_in"], "postprocess": id},
+    {"name": "let_in", "symbols": [{"literal":"let"}, "expr", {"literal":"="}, "expr", {"literal":"in"}, "expr"], "postprocess": d => LetIn(d[1], d[3], d[5])},
+    {"name": "let_in", "symbols": ["if"], "postprocess": id},
+    {"name": "if", "symbols": [{"literal":"if"}, "expr", {"literal":"then"}, "expr", {"literal":"else"}, "expr"], "postprocess":  
         ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
         },
     {"name": "if", "symbols": ["addsub"], "postprocess": id},
@@ -108,7 +110,9 @@ const grammar: Grammar = {
     {"name": "term", "symbols": ["paren"], "postprocess": id},
     {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
     {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},
-    {"name": "rule", "symbols": ["expr", {"literal":"="}, "expr"], "postprocess": ([lhs, _, rhs]) => ({ type: 'rule', lhs, rhs })},
+    {"name": "rule$ebnf$1", "symbols": []},
+    {"name": "rule$ebnf$1", "symbols": ["rule$ebnf$1", (lexer.has("nl") ? {type: "nl"} : nl)], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "rule", "symbols": ["expr", {"literal":"="}, "rule$ebnf$1", "expr"], "postprocess": ([lhs, _eq, _nls, rhs]) => ({ type: 'rule', lhs, rhs })},
     {"name": "rules", "symbols": ["non_empty_rules"], "postprocess": id},
     {"name": "non_empty_rules", "symbols": ["rule"], "postprocess": d => [d[0]]},
     {"name": "non_empty_rules$ebnf$1", "symbols": [(lexer.has("nl") ? {type: "nl"} : nl)]},

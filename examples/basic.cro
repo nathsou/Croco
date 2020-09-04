@@ -1,25 +1,31 @@
-Collatz 0 = Error
-Collatz 1 = [1]
-Collatz n = n : (Collatz (if (n % 2) == 0 then n / 2 else 3 * n + 1))
+Collatz n = Collatz' n []
+Collatz' 1 acc = Rev (1 : acc)
+Collatz' n acc = Collatz' (NextCollatz n) (n:acc)
+
+NextCollatz n = (if (n % 2) == 0 then n / 2 else 3 * n + 1)
 
 Rev lst = Rev' lst []
 Rev' [] rev = rev
 Rev' (h:tl) acc = Rev' tl (h:acc)
 
-Range from to = Range' from to []
-Range' to to rng = Rev (to : rng)
-Range' from to acc = Range' (from + 1) to (from : acc)
+Range from to = Range' from to [] (from == to)
+Range' from to rng True = rng
+Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
 
-Len [] = 0
-Len (h:tl) = (Len tl) + 1
+Len lst = Len' lst 0
+Len' [] len = len
+Len' (h:tl) len = Len' tl (len + 1)
 
-CollatzLen n = Len (Collatz n)
+CollatzLen n = CollatzLen' n 1
+CollatzLen' 1 len = len
+CollatzLen' n len = CollatzLen' (NextCollatz n) (len + 1)
 
-Map f [] = []
-Map f (h:tl) = (f h) : (Map f tl)
+Map f lst = Map' f lst []
+Map' f [] acc = Rev acc
+Map' f (h:tl) acc = Map' f tl ((f h):acc)
 
 Max (h:tl) = Max' tl h
 Max' [] max = max
-Max' (h:tl) m = Max' tl (if h > m then h else m) 
+Max' (h:tl) m = Max' tl (if h > m then h else m)
 
-Main = Max (Map CollatzLen (Range 1 100))
+Main = Map CollatzLen (Range 1 1000)
