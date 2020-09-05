@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
-import { arithmeticExternals, DecisionTreeNormalizer, fun, mergeExternals, metaExternals, showTRS, supportedTargets, Targets, translate } from "girafe";
+import { arithmeticExternals, DecisionTreeNormalizer, fun, mergeExternals, metaExternals, showTRS, supportedTargets, Targets, translate, nodeWorkerNormalizer, makeNat } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { postprocessTerm } from "../src/Parser/Expr";
 import { parse } from "../src/Parser/Parser";
@@ -36,11 +36,11 @@ if (out) {
         printUsage();
     }
 } else {
-    const normalize = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
-    console.log(postprocessTerm(normalize(fun('Main'))));
+    // const normalize = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
+    // console.log(postprocessTerm(normalize(fun('Main'))));
 
-    // const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
-    // normalize(fun('Main')).then(out => {
-    //     console.log(postprocessTerm(out));
-    // });
+    const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
+    normalize(fun('Main')).then(out => {
+        console.log(postprocessTerm(out));
+    });
 }

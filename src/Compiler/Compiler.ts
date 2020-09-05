@@ -1,9 +1,9 @@
 import { check, checkArity, checkNoDuplicates, checkNoFreeVars, compile as grfCompile, ExternalsFactory, isOk, leftLinearize, mapify, normalizeLhsArgs, simulateIfs, TRS, unwrap } from 'girafe';
 import { grfRuleOf, Prog } from "../Parser/Expr";
-import { removeLetIns } from './Passes/letIn';
+import { removeLambdas } from './Passes/Lambdas';
 
 export const compile = (rules: Prog, externals: ExternalsFactory<string>): TRS => {
-    const trs = mapify(removeLetIns(rules).map(grfRuleOf));
+    const trs = mapify(removeLambdas(rules).map(grfRuleOf));
 
     const res = grfCompile(
         trs,

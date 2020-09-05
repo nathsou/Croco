@@ -1,8 +1,8 @@
-import { fun, isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm, uniq } from 'girafe';
+import { fun, isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm } from 'girafe';
 
 export type Prog<E = Expr> = RuleDecl<E>[];
 export type Decl = RuleDecl;
-export type Expr = Term | LetInExpr;
+export type Expr = Term | LambdaExpr;
 
 export type Term = Var | Fun;
 
@@ -22,6 +22,12 @@ export type LetInExpr = {
     x: Term,
     val: Expr,
     rhs: Expr
+};
+
+export type LambdaExpr = {
+    type: 'lambda',
+    x: Term,
+    expr: Expr
 };
 
 export type RuleDecl<E = Expr> = {
@@ -86,8 +92,8 @@ export const showExpr = (expr: Expr): string => {
         case 'fun':
         case 'var':
             return showTerm(expr);
-        case 'let_in':
-            return `let ${showTerm(expr.x)} = ${showExpr(expr.val)} in ${showExpr(expr.rhs)}`;
+        case 'lambda':
+            return `$(\\${showTerm(expr.x)} -> ${showExpr(expr.expr)})`;
     }
 };
 
@@ -99,15 +105,15 @@ export const showProg = (prog: Prog): string => {
     return prog.map(showRule).join('\n');
 };
 
-export const vars = (expr: Expr, acc: string[] = []): string[] => {
-    if (expr.type === 'var') {
-        acc.push(expr.name);
-        return acc;
-    }
+// export const vars = (expr: Expr, acc: string[] = []): string[] => {
+//     if (expr.type === 'var') {
+//         acc.push(expr.name);
+//         return acc;
+//     }
 
-    if (expr.type === 'let_in') {
-        return [...vars(expr.x), ...vars(expr.val), ...vars(expr.rhs)];
-    }
+//     if (expr.type === 'let_in') {
+//         return [...vars(expr.x), ...vars(expr.val), ...vars(expr.rhs)];
+//     }
 
-    return expr.args.reduce((acc, t) => vars(t, acc), acc);
-};
+//     return expr.args.reduce((acc, t) => vars(t, acc), acc);
+// };

@@ -6,7 +6,7 @@ A basic purely functional programming language which compiles down to
 ### Usage
 
 ```bash
-$ croco.ts source.cro
+$ croco source.cro [out] [js/haskell/ocaml/girafe]
 ```
 
 ### Todo

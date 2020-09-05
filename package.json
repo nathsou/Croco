@@ -24,6 +24,9 @@
     "Functional",
     "Programming"
   ],
+  "bin": {
+    "croco": "./dist/croco.js"
+  },
   "author": "Nathan Soufflet",
   "license": "MIT"
 }

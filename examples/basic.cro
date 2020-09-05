@@ -16,10 +16,6 @@ Len lst = Len' lst 0
 Len' [] len = len
 Len' (h:tl) len = Len' tl (len + 1)
 
-CollatzLen n = CollatzLen' n 1
-CollatzLen' 1 len = len
-CollatzLen' n len = CollatzLen' (NextCollatz n) (len + 1)
-
 Map f lst = Map' f lst []
 Map' f [] acc = Rev acc
 Map' f (h:tl) acc = Map' f tl ((f h):acc)
@@ -33,4 +29,4 @@ Zip' as Nil zipped = Rev zipped
 Zip' Nil bs zipped = Rev zipped
 Zip' (a:as) (b:bs) acc = Zip' as bs ((P a b) : acc)
 
-Main = Map CollatzLen (Range 1 1000)
+Main = Max (Map (\n -> Len (Collatz n)) (Range 1 1000))
