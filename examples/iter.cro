@@ -1,0 +1,41 @@
+Iter EmptyIt = EmptyIt
+
+Range to to = It to EmptyIt
+Range from to = It from (NextRange from to)
+Iter (NextRange from to) = Range (from + 1) to
+
+Next (It h tl) = Iter tl
+
+Nth EmptyIt n = None
+Nth (It h tl) 0 = Some h
+Nth x 0 = None
+Nth (It h tl) n = Nth (Iter tl) (n - 1)
+
+Map f EmptyIt = EmptyIt
+Map f (It h tl) = It (f h) (NextMap f tl)
+Iter (NextMap f tl) = Map f (Iter tl)
+
+Inc n = n + 1
+
+Take 0 it = []
+Take n EmptyIt = []
+Take n (It h tl) = h : (Take (n - 1) (Iter tl))
+
+TakeAll EmptyIt = []
+TakeAll (It h tl) = h : (TakeAll (Iter tl))
+
+Filter pred EmptyIt = EmptyIt
+Filter pred (It h tl) = if (pred h) then (It h (NextFilter pred tl)) else (Filter pred (Iter tl))
+Iter (NextFilter pred tl) = Filter pred (Iter tl)
+
+Gtr a b = b > a
+
+IsPrime 1 = False
+IsPrime 2 = True
+IsPrime n = if (n % 2) == 0 then False else (IsPrime' n 3)
+IsPrime' n i = if (i * i) > n then True else (if (n % i) == 0 then False else (IsPrime' n (i + 2)))
+
+Len EmptyIt = 0
+Len (It h tl) = (Len (Iter tl)) + 1
+
+Main = Len (Filter IsPrime (Range 0 1000))

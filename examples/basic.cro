@@ -28,4 +28,9 @@ Max (h:tl) = Max' tl h
 Max' [] max = max
 Max' (h:tl) m = Max' tl (if h > m then h else m)
 
+Zip as bs = Zip' as bs []
+Zip' as Nil zipped = Rev zipped
+Zip' Nil bs zipped = Rev zipped
+Zip' (a:as) (b:bs) acc = Zip' as bs ((P a b) : acc)
+
 Main = Map CollatzLen (Range 1 1000)

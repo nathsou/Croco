@@ -1,39 +1,46 @@
 import { readFileSync, writeFileSync } from "fs";
-import { arithmeticExternals, fun, mergeExternals, metaExternals, nodeWorkerNormalizer, showTRS, supportedTargets, Targets, translate } from "girafe";
+import { arithmeticExternals, DecisionTreeNormalizer, fun, mergeExternals, metaExternals, showTRS, supportedTargets, Targets, translate } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { postprocessTerm } from "../src/Parser/Expr";
 import { parse } from "../src/Parser/Parser";
 
 const [src, out, target] = process.argv.slice(2);
 
-if (src === undefined) {
-    console.info('usage: croco src.cro [out.grf');
+const printUsage = () => {
+    console.info('usage: croco src.cro [out.grf]');
     process.exit(0);
+};
+
+if (src === undefined) {
+    printUsage();
 }
 
 const source = readFileSync(src).toString('utf-8');
 
-const trs = compile(parse(source));
+const externals = mergeExternals(arithmeticExternals, metaExternals());
+
+const trs = compile(parse(source), externals);
 
 if (out) {
-    if (target === 'girafe') {
-        writeFileSync(out, showTRS(trs));
-    } else if (target) {
-        if (supportedTargets.includes(target as Targets)) {
+    if (target) {
+        if (target === 'girafe') {
+            writeFileSync(out, showTRS(trs));
+        } else if (supportedTargets.includes(target as Targets)) {
             const externals = mergeExternals(arithmeticExternals, metaExternals());
             writeFileSync(out, translate(trs, target as Targets, externals));
         } else {
-            console.log(`invalid target: ${target}, options are: ${supportedTargets.join(', ')}`);
+            console.log(`invalid target: ${target}, options are: ${[...supportedTargets, 'girafe'].join(', ')}`);
             process.exit();
         }
+    } else {
+        printUsage();
     }
 } else {
-    const log = (msg: string) => { console.log(msg); };
-    const externals = mergeExternals(arithmeticExternals, metaExternals(log))('js');
-    const normalize = nodeWorkerNormalizer(trs, externals);
+    const normalize = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
+    console.log(postprocessTerm(normalize(fun('Main'))));
 
-    normalize(fun('Main')).then(out => {
-        console.log(postprocessTerm(out));
-    });
-
+    // const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
+    // normalize(fun('Main')).then(out => {
+    //     console.log(postprocessTerm(out));
+    // });
 }

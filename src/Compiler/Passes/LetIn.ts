@@ -1,8 +1,10 @@
 import { Expr, Prog, RuleDecl, Term } from "../../Parser/Expr";
 
+let letInsCount = 0;
+
 export const removeLetIns = (prog: Prog): Prog<Term> => {
     const newRules: Prog<Term> = [];
-    let letInsCount = { count: 0 };
+    letInsCount = 0;
 
     for (const { lhs, rhs } of prog) {
         newRules.push({
@@ -10,10 +12,7 @@ export const removeLetIns = (prog: Prog): Prog<Term> => {
             lhs: lhs as Term,
             rhs: removeLetInsIn(
                 rhs,
-                rule => {
-                    newRules.push(rule);
-                },
-                letInsCount
+                rule => { newRules.push(rule); }
             )
         });
     }
@@ -21,17 +20,19 @@ export const removeLetIns = (prog: Prog): Prog<Term> => {
     return newRules;
 };
 
+// TODO: support nested let .. in expressions
 const removeLetInsIn = (
     expr: Expr,
-    addRule: (rule: RuleDecl<Term>) => void,
-    count: { count: number }
+    addRule: (rule: RuleDecl<Term>) => void
 ): Term => {
     if (expr.type === 'let_in') {
-        const name = `let_in${count.count++}`;
+        const name = `let_in${letInsCount++}`;
+
+        const rhs = removeLetInsIn(expr.rhs, addRule);
         const rule: RuleDecl<Term> = {
             type: 'rule',
             lhs: { type: 'fun', name, args: [expr.x] },
-            rhs: removeLetInsIn(expr.rhs, addRule, count)
+            rhs
         };
 
         addRule(rule);
@@ -39,7 +40,7 @@ const removeLetInsIn = (
         return {
             type: 'fun',
             name,
-            args: [removeLetInsIn(expr.val, addRule, count)]
+            args: [removeLetInsIn(expr.val, addRule)]
         };
     }
 
@@ -47,7 +48,7 @@ const removeLetInsIn = (
         return {
             type: 'fun',
             name: expr.name,
-            args: expr.args.map(t => removeLetInsIn(t, addRule, count))
+            args: expr.args.map(t => removeLetInsIn(t, addRule))
         };
     }
 

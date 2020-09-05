@@ -1,6 +1,6 @@
 {
   "name": "croco",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Basic purely functional programming language based on term rewriting",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "build": "webpack --mode development"
   },
   "dependencies": {
-    "girafe": "^0.0.8",
+    "girafe": "^0.1.1",
     "nearley": "^2.19.6"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import * as nearley from 'nearley';
-import grammar from './croco';
+import grammar from './grammar';
 import { Prog, showProg } from './Expr';
 
 export const parse = (source: string): Prog => {
