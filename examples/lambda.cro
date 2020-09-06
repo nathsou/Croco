@@ -43,8 +43,8 @@ Filter pred lst = Rev (Fold (FilterL pred) lst [])
 
 IsPrime n = Len (Divisors n) == 2
 
-Prod lst = Fold (\a -> \b -> a * b) lst 1
-Sum lst = Fold (\a -> \b -> a + b) lst 0
+Prod lst = Fold (\a b -> a * b) lst 1
+Sum lst = Fold (\a b -> a + b) lst 0
 
 Rev lst = Rev' lst []
 Rev' [] rev = rev

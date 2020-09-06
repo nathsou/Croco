@@ -1,4 +1,4 @@
-import { LambdaExpr, Prog, RuleDecl, Term, fun, freeVars, vars, appChain, Var } from "../../Parser/Expr";
+import { LambdaExpr, Prog, RuleDecl, Term, fun, freeVars, vars, appChain, Var, rev } from "../../Parser/Expr";
 import { uniq } from "girafe";
 type L = Term | LambdaExpr;
 
@@ -39,7 +39,7 @@ const removeLambdasIn = (
 
             addRule(rule);
 
-            return appChain(fun(name), vs);
+            return appChain(fun(name), rev(vs));
 
         case 'fun':
             return {

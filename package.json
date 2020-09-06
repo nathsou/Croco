@@ -8,7 +8,7 @@
     "build": "webpack --mode development"
   },
   "dependencies": {
-    "girafe": "^0.1.1",
+    "girafe": "^0.1.2",
     "nearley": "^2.19.6"
   },
   "devDependencies": {

@@ -48,4 +48,35 @@ Len' h:tl len = Len' tl (len + 1)
 
 Primes = Filter IsPrime Nats
 
-Main = Take 10 Primes
+Or False False = False
+Or False True = True
+Or True False = True
+Or True True = True
+
+Divisible a b = a % b == 0
+
+Sum [] = 0
+Sum h:tl = h + (Sum tl)
+
+Euler 1 = Sum (TakeWhile (\n -> n < 1000) (Filter (\n -> Or (Divisible n 3) (Divisible n 5)) Nats))
+
+Fibs = Fibs' 1 2
+Fibs' a b = It a (NextFib b (a + b))
+Iter (NextFib a b) = Fibs' a b
+
+Even n = Divisible n 2
+
+Euler 2 = Sum (TakeWhile (\n -> n < 4000000) (Filter Even Fibs))
+
+Factorize 1 = []
+Factorize 2 = [2]
+Factorize n = if Divisible n 2 then 2 : (Factorize (n / 2)) else Factorize' n 3
+Factorize' n i = if i * i <= n then (if Divisible n i then i : (Factorize (n / i)) else Factorize' n (i + 2)) else [n]
+
+Max h:tl = Max' tl h
+Max' [] m = m
+Max' h:tl m = Max' tl (if h > m then h else m)
+
+Euler 3 = Max (Factorize 600851475143)
+
+Main = Euler 3
