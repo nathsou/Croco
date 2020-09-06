@@ -53,6 +53,7 @@ export const grfRuleOf = (rule: RuleDecl<Term>): grfRule => {
 
 export const showTerm = (term: Term): string => {
     if (term.type === 'var') return term.name;
+    if (term.type !== 'fun') return showExpr(term);
     if (term.args.length === 0) return term.name;
     return `(${term.name} ${term.args.map(showTerm).join(' ')})`;
 };
@@ -96,7 +97,7 @@ export const showExpr = (expr: Expr): string => {
         case 'var':
             return showTerm(expr);
         case 'lambda':
-            return `$(\\${showTerm(expr.x)} -> ${showExpr(expr.rhs)})`;
+            return `\\${showTerm(expr.x)} -> ${showExpr(expr.rhs)}`;
     }
 };
 

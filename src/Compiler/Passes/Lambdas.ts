@@ -22,7 +22,6 @@ export const removeLambdas = (prog: Prog<L>): Prog<Exclude<L, LambdaExpr>> => {
     return newRules;
 };
 
-// TODO: support nested lambda expressions and variable capturing
 const removeLambdasIn = (
     expr: L,
     addRule: (rule: RuleDecl<Term>) => void

@@ -12,7 +12,7 @@ $ croco source.cro [out] [js/haskell/ocaml/girafe]
 ### Todo
 
 - [ ] allow lowercase function names
-- [ ] add lambda expressions
-- [ ] add let .. in expressions
+- [x] add lambda expressions
+- [x] add let .. in expressions
 - [x] support function application
 - [ ] support IO actions using monads

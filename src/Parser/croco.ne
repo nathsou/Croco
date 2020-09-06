@@ -36,8 +36,16 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
-const Lambda = (x, rhs) => ({ type: 'lambda', x, rhs });
-const LetIn = (x, val, rhs) => App(Lambda(x, rhs), val);
+
+const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
+
+const lambdaAux = (args, rhs) => {
+  if (args.length === 1) return { type: 'lambda', x: args[0], rhs };
+  const [h, tl] = [args[0], args.slice(1)];
+  return Lambda(tl, { type: 'lambda', x: h, rhs });
+};
+
+const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
 %}
 
 @lexer lexer
@@ -46,7 +54,10 @@ main -> rules {% id %}
 
 expr -> lambda {% id %}
 
-lambda -> "\\" expr "->" expr {% d => Lambda(d[1], d[3]) %}
+lambda_args -> cons {% ([e]) => [e] %}
+lambda_args -> lambda_args cons {% ([es, e]) => [...es, e] %}
+
+lambda -> "\\" lambda_args "->" expr {% d => Lambda(d[1], d[3]) %}
 lambda -> comp {% id %}
 
 comp -> comp "<"  let_in {% ([a, _, b]) => Fun("@lss", a, b) %}

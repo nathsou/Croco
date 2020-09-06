@@ -30,10 +30,9 @@ Prepend a:as bs = a : (Prepend as bs)
 
 Append as bs = Prepend bs as
 
-Len lst = Fold (\h -> \acc -> acc + 1) lst 0
+Len lst = Fold (\h acc -> acc + 1) lst 0
 
-MapL f h acc = (f h):acc
-Map f lst = Rev (Fold (MapL f) lst [])
+Map f lst = Rev (Fold ((\f h acc -> (f h):acc) f) lst [])
 
 Range from to = Range' from to [] (from == to)
 Range' from to rng True = rng
@@ -55,21 +54,19 @@ Partition pred lst = Partition' pred lst [[], []]
 Partition' pred [] [as, bs] = [Rev as, Rev bs]
 Partition' pred h:tl [as, bs] = Partition' pred tl (if (pred h) then [h:as, bs] else [as, h:bs])
 
-Less a b = b < a
-
 TakeWhile pred lst = TakeWhile' pred lst [] Continue
 TakeWhile' pred [] acc s = Rev acc
 TakeWhile' pred lst (a:acc) Stop = Rev acc
 TakeWhile' pred h:tl acc Continue = TakeWhile' pred tl (h:acc) (if (pred h) then Continue else Stop)
 
 Sort [] = []
-Sort h:tl = Sort' h (Partition (Less h) tl)
+Sort h:tl = Sort' h (Partition (\n -> n < h) tl)
 Sort' h [as, bs] = Prepend (Sort as) (h : (Sort bs))
 
 Factorize n = Filter IsPrime (Divisors n)
 
 Fact n = Prod (Range 1 n)
 
-PrimesSq = TakeWhile (Less 1000) (Map (\n -> n * n) (Filter IsPrime (Range 1 1000)))
+PrimesSq = TakeWhile (\n -> n < 1000) (Map (\n -> n * n) (Filter IsPrime (Range 1 1000)))
 
-Main = let a = 2 in let b = 3 in a + b
+Main = PrimesSq

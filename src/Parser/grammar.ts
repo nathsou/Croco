@@ -46,8 +46,16 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
-const Lambda = (x, rhs) => ({ type: 'lambda', x, rhs });
-const LetIn = (x, val, rhs) => App(Lambda(x, rhs), val);
+
+const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
+
+const lambdaAux = (args, rhs) => {
+  if (args.length === 1) return { type: 'lambda', x: args[0], rhs };
+  const [h, tl] = [args[0], args.slice(1)];
+  return Lambda(tl, { type: 'lambda', x: h, rhs });
+};
+
+const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -80,7 +88,9 @@ const grammar: Grammar = {
   ParserRules: [
     {"name": "main", "symbols": ["rules"], "postprocess": id},
     {"name": "expr", "symbols": ["lambda"], "postprocess": id},
-    {"name": "lambda", "symbols": [{"literal":"\\"}, "expr", {"literal":"->"}, "expr"], "postprocess": d => Lambda(d[1], d[3])},
+    {"name": "lambda_args", "symbols": ["cons"], "postprocess": ([e]) => [e]},
+    {"name": "lambda_args", "symbols": ["lambda_args", "cons"], "postprocess": ([es, e]) => [...es, e]},
+    {"name": "lambda", "symbols": [{"literal":"\\"}, "lambda_args", {"literal":"->"}, "expr"], "postprocess": d => Lambda(d[1], d[3])},
     {"name": "lambda", "symbols": ["comp"], "postprocess": id},
     {"name": "comp", "symbols": ["comp", {"literal":"<"}, "let_in"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
     {"name": "comp", "symbols": ["comp", {"literal":"<="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
