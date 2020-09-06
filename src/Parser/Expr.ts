@@ -1,4 +1,4 @@
-import { fun, isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm } from 'girafe';
+import { isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm, decons } from 'girafe';
 
 export type Prog<E = Expr> = RuleDecl<E>[];
 export type Decl = RuleDecl;
@@ -27,7 +27,7 @@ export type LetInExpr = {
 export type LambdaExpr = {
     type: 'lambda',
     x: Term,
-    expr: Expr
+    rhs: Expr
 };
 
 export type RuleDecl<E = Expr> = {
@@ -38,7 +38,7 @@ export type RuleDecl<E = Expr> = {
 
 export const grfTermOf = (t: Term): grfTerm => {
     if (t.type === 'var') return t.name;
-    return fun(t.name, ...t.args.map(grfTermOf));
+    return { name: t.name, args: t.args.map(grfTermOf) };
 };
 
 export const grfRuleOf = (rule: RuleDecl<Term>): grfRule => {
@@ -96,7 +96,7 @@ export const showExpr = (expr: Expr): string => {
         case 'var':
             return showTerm(expr);
         case 'lambda':
-            return `$(\\${showTerm(expr.x)} -> ${showExpr(expr.expr)})`;
+            return `$(\\${showTerm(expr.x)} -> ${showExpr(expr.rhs)})`;
     }
 };
 
@@ -108,15 +108,53 @@ export const showProg = (prog: Prog): string => {
     return prog.map(showRule).join('\n');
 };
 
-// export const vars = (expr: Expr, acc: string[] = []): string[] => {
-//     if (expr.type === 'var') {
-//         acc.push(expr.name);
-//         return acc;
-//     }
+export const fun = (name: string, ...args: Term[]): Fun => ({ type: 'fun', name, args });
+export const app = (lhs: Term, rhs: Term): Fun => fun('app', lhs, rhs);
 
-//     if (expr.type === 'let_in') {
-//         return [...vars(expr.x), ...vars(expr.val), ...vars(expr.rhs)];
-//     }
+export const rev = <T>(lst: readonly T[]): T[] => {
+    const r: T[] = [];
+    for (let i = lst.length - 1; i >= 0; i--) {
+        r.push(lst[i]);
+    }
 
-//     return expr.args.reduce((acc, t) => vars(t, acc), acc);
-// };
+    return r;
+};
+
+export const appChain = (lhs: Term, args: Term[]): Term => {
+    return appChainAux(lhs, rev(args));
+};
+
+const appChainAux = (lhs: Term, args: Term[]): Term => {
+    if (args.length === 0) return lhs;
+    if (args.length === 1) return app(lhs, args[0]);
+
+    const [h, tl] = decons(args);
+    return app(appChain(lhs, tl), h);
+};
+
+export const vars = (expr: Expr, acc: string[] = []): string[] => {
+    if (expr.type === 'var') {
+        acc.push(expr.name);
+        return acc;
+    }
+
+    if (expr.type === 'lambda') {
+        return [...vars(expr.x), ...vars(expr.rhs)];
+    }
+
+    return expr.args.reduce((acc, t) => vars(t, acc), acc);
+};
+
+export const freeVars = (expr: Expr, acc: string[] = []): string[] => {
+    switch (expr.type) {
+        case 'var':
+            acc.push(expr.name);
+            return acc;
+        case 'fun':
+            return expr.args.reduce((acc, t) => freeVars(t, acc), acc);
+        case 'lambda':
+            const vs = freeVars(expr.x);
+            acc.push(...freeVars(expr.rhs).filter(v => !vs.includes(v)));
+            return acc;
+    }
+};

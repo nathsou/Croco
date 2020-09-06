@@ -1,0 +1,9 @@
+Eval A:a:stack = a + (Eval stack)
+Eval T:a:stack = a * (Eval stack)
+Eval D:a:stack = a / (Eval stack)
+Eval M:a:stack = a % (Eval stack)
+Eval P:a:stack = a ** (Eval stack)
+Eval [n] = n
+Eval stack = stack
+
+Main = Eval [M, 171, T, 5, A, 2, T, 3, 7]

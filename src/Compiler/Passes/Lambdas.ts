@@ -1,5 +1,5 @@
-import { LambdaExpr, Prog, RuleDecl, Term } from "../../Parser/Expr";
-
+import { LambdaExpr, Prog, RuleDecl, Term, fun, freeVars, vars, appChain, Var } from "../../Parser/Expr";
+import { uniq } from "girafe";
 type L = Term | LambdaExpr;
 
 let lambdasCount = 0;
@@ -30,16 +30,17 @@ const removeLambdasIn = (
     switch (expr.type) {
         case 'lambda':
             const name = `lambda${lambdasCount++}`;
+            const vs: Var[] = uniq(freeVars(expr)).map(v => ({ type: 'var', name: v }));
 
             const rule: RuleDecl<Exclude<L, LambdaExpr>> = {
                 type: 'rule',
-                lhs: { type: 'fun', name: 'app', args: [{ type: 'fun', name, args: [] }, expr.x] },
-                rhs: removeLambdasIn(expr.expr, addRule)
+                lhs: appChain(fun(name), [...vs, expr.x]),
+                rhs: removeLambdasIn(expr.rhs, addRule)
             };
 
             addRule(rule);
 
-            return { type: 'fun', name, args: [] };
+            return appChain(fun(name), vs);
 
         case 'fun':
             return {

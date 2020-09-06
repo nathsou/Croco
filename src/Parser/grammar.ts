@@ -46,7 +46,7 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
-const Lambda = (x, expr) => ({ type: 'lambda', x, expr });
+const Lambda = (x, rhs) => ({ type: 'lambda', x, rhs });
 const LetIn = (x, val, rhs) => App(Lambda(x, rhs), val);
 
 interface NearleyToken {  value: any;
@@ -96,7 +96,7 @@ const grammar: Grammar = {
     {"name": "if", "symbols": ["app"], "postprocess": id},
     {"name": "app", "symbols": ["app", "cons"], "postprocess": ([lhs, rhs]) => App(lhs, rhs)},
     {"name": "app", "symbols": ["cons"], "postprocess": id},
-    {"name": "cons", "symbols": ["cons", {"literal":":"}, "list"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
+    {"name": "cons", "symbols": ["list", {"literal":":"}, "cons"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
     {"name": "cons", "symbols": ["list"], "postprocess": id},
     {"name": "list", "symbols": [(lexer.has("lbracket") ? {type: "lbracket"} : lbracket), "list_elems", (lexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": d => d[1]},
     {"name": "list_elems", "symbols": ["expr"], "postprocess": ([e]) => Fun(':', e, Fun('Nil'))},

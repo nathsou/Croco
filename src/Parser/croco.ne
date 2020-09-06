@@ -36,7 +36,7 @@ lexer.next = (next => () => {
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const App = (f, x) => Fun('app', f, x);
-const Lambda = (x, expr) => ({ type: 'lambda', x, expr });
+const Lambda = (x, rhs) => ({ type: 'lambda', x, rhs });
 const LetIn = (x, val, rhs) => App(Lambda(x, rhs), val);
 %}
 
@@ -67,7 +67,7 @@ if -> app {% id %}
 app -> app cons {% ([lhs, rhs]) => App(lhs, rhs) %}
 app -> cons {% id %}
 
-cons -> cons ":" list {% ([h, _, tl]) => Fun(':', h, tl) %}
+cons -> list ":" cons {% ([h, _, tl]) => Fun(':', h, tl) %}
 cons -> list {% id %}
 
 list -> %lbracket list_elems %rbracket {% d => d[1] %}

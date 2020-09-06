@@ -9,6 +9,10 @@ Assert (test:tests) = if test then Assert tests else Failure
 Double = \x -> [x, x]
 Shrink = \[x, x] -> x
 
+Fold f lst base = Fold' f lst base
+Fold' f [] acc = acc
+Fold' f h:tl acc = Fold' f tl (f h acc)
+
 Divisible a b = a % b == 0
 
 Divisors 0 = []
@@ -17,36 +21,31 @@ Divisors n = Divisors' n 2 [1]
 Divisors' n i acc = if i * i >= n then MirrorDivisors n i acc else Divisors' n (i + 1) (if Divisible n i then i:acc else acc)
 
 Div a b = a / b
-MirrorDivisors n i divs = MirrorDivisors' n i (Prepend divs (Map (Div n) divs))
-MirrorDivisors' n i divs = if i * i == n then i : divs else divs
+MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (Div n) divs)
+MirrorDivisors' n i leftDivs rightDivs = if i * i == n then Prepend leftDivs (i : rightDivs) else Prepend leftDivs rightDivs
 
 Prepend as [] = as
 Prepend [] bs = bs
 Prepend a:as bs = a : (Prepend as bs)
 
-Append as [] = as
-Append [] bs = bs
-Append a:as bs = a : (Append as bs)
+Append as bs = Prepend bs as
 
-Len [] = 0
-Len h:tl = (Len tl) + 1
+Len lst = Fold (\h -> \acc -> acc + 1) lst 0
 
-Map f [] = []
-Map f h:tl = (f h) : (Map f tl)
+MapL f h acc = (f h):acc
+Map f lst = Rev (Fold (MapL f) lst [])
 
-Range to to = [to]
-Range from to = from : (Range (from + 1) to)
+Range from to = Range' from to [] (from == to)
+Range' from to rng True = rng
+Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
 
-Filter pred [] = []
-Filter pred h:tl = if (pred h) then h : (Filter pred tl) else Filter pred tl
+FilterL pred h acc = if (pred h) then (h:acc) else acc
+Filter pred lst = Rev (Fold (FilterL pred) lst [])
 
 IsPrime n = Len (Divisors n) == 2
 
-Sum [] = 0
-Sum h:tl = h + (Sum tl)
-
-Prod [] = 1
-Prod h:tl = h * (Prod tl)
+Prod lst = Fold (\a -> \b -> a * b) lst 1
+Sum lst = Fold (\a -> \b -> a + b) lst 0
 
 Rev lst = Rev' lst []
 Rev' [] rev = rev
@@ -58,10 +57,19 @@ Partition' pred h:tl [as, bs] = Partition' pred tl (if (pred h) then [h:as, bs] 
 
 Less a b = b < a
 
+TakeWhile pred lst = TakeWhile' pred lst [] Continue
+TakeWhile' pred [] acc s = Rev acc
+TakeWhile' pred lst (a:acc) Stop = Rev acc
+TakeWhile' pred h:tl acc Continue = TakeWhile' pred tl (h:acc) (if (pred h) then Continue else Stop)
+
 Sort [] = []
 Sort h:tl = Sort' h (Partition (Less h) tl)
 Sort' h [as, bs] = Prepend (Sort as) (h : (Sort bs))
 
+Factorize n = Filter IsPrime (Divisors n)
+
 Fact n = Prod (Range 1 n)
 
-Main = Sort (Filter IsPrime (Divisors (Fact 10)))
+PrimesSq = TakeWhile (Less 1000) (Map (\n -> n * n) (Filter IsPrime (Range 1 1000)))
+
+Main = let a = 2 in let b = 3 in a + b
