@@ -59,11 +59,14 @@ export const showTerm = (term: Term): string => {
 
 export const postprocessTerm = (term: grfTerm): string => {
     if (isVar(term)) return term;
-    if (term.args.length === 0) return term.name;
+    if (term.name === 'Nil') return '[]';
+    if (term.name === 'Unit') return '()';
 
-    switch (term.name) {
-        case 'Nil':
-            return '[]';
+    const f = term.name.replace(/_(sim)[0-9]+/g, '');
+
+    if (term.args.length === 0) return f;
+
+    switch (f) {
         case ':':
             const [h, tl] = term.args;
             return `[${postprocessList(h, tl)}]`;

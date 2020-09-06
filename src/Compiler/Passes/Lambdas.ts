@@ -39,11 +39,7 @@ const removeLambdasIn = (
 
             addRule(rule);
 
-            return {
-                type: 'fun',
-                name,
-                args: []
-            };
+            return { type: 'fun', name, args: [] };
 
         case 'fun':
             return {

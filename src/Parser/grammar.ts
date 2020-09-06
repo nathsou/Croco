@@ -7,6 +7,7 @@ declare var lbracket: any;
 declare var rbracket: any;
 declare var symb: any;
 declare var nil: any;
+declare var unit: any;
 declare var varname: any;
 declare var nl: any;
 
@@ -25,6 +26,7 @@ const lexer = moo.compile({
   binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
   comma: ',',
   assign: '=',
+  unit: '()',
   lparen: '(',
   rparen: ')',
   nil: '[]',
@@ -79,7 +81,13 @@ const grammar: Grammar = {
     {"name": "main", "symbols": ["rules"], "postprocess": id},
     {"name": "expr", "symbols": ["lambda"], "postprocess": id},
     {"name": "lambda", "symbols": [{"literal":"\\"}, "expr", {"literal":"->"}, "expr"], "postprocess": d => Lambda(d[1], d[3])},
-    {"name": "lambda", "symbols": ["let_in"], "postprocess": id},
+    {"name": "lambda", "symbols": ["comp"], "postprocess": id},
+    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "let_in"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">"}, "let_in"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
+    {"name": "comp", "symbols": ["let_in"], "postprocess": id},
     {"name": "let_in", "symbols": [{"literal":"let"}, "expr", {"literal":"="}, "expr", {"literal":"in"}, "expr"], "postprocess": d => LetIn(d[1], d[3], d[5])},
     {"name": "let_in", "symbols": ["if"], "postprocess": id},
     {"name": "if", "symbols": [{"literal":"if"}, "expr", {"literal":"then"}, "expr", {"literal":"else"}, "expr"], "postprocess":  
@@ -102,16 +110,11 @@ const grammar: Grammar = {
     {"name": "multdiv", "symbols": ["multdiv", {"literal":"%"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mod", a, b)},
     {"name": "multdiv", "symbols": ["pow"], "postprocess": id},
     {"name": "pow", "symbols": ["pow", {"literal":"**"}, "comp"], "postprocess": ([a, _, b]) => Fun("**", a, b)},
-    {"name": "pow", "symbols": ["comp"], "postprocess": id},
-    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "cons"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "cons"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">"}, "cons"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">="}, "cons"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "cons"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
-    {"name": "comp", "symbols": ["term"], "postprocess": id},
+    {"name": "pow", "symbols": ["term"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("symb") ? {type: "symb"} : symb)], "postprocess": ([s]) => Fun(s.value)},
     {"name": "term", "symbols": ["var"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("nil") ? {type: "nil"} : nil)], "postprocess": () => Fun('Nil')},
+    {"name": "term", "symbols": [(lexer.has("unit") ? {type: "unit"} : unit)], "postprocess": () => Fun('Unit')},
     {"name": "term", "symbols": ["paren"], "postprocess": id},
     {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
     {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},

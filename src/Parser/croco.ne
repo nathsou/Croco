@@ -16,6 +16,7 @@ const lexer = moo.compile({
   binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
   comma: ',',
   assign: '=',
+  unit: '()',
   lparen: '(',
   rparen: ')',
   nil: '[]',
@@ -46,7 +47,14 @@ main -> rules {% id %}
 expr -> lambda {% id %}
 
 lambda -> "\\" expr "->" expr {% d => Lambda(d[1], d[3]) %}
-lambda -> let_in {% id %}
+lambda -> comp {% id %}
+
+comp -> comp "<"  let_in {% ([a, _, b]) => Fun("@lss", a, b) %}
+comp -> comp "<=" let_in {% ([a, _, b]) => Fun("@leq", a, b) %}
+comp -> comp ">"  let_in {% ([a, _, b]) => Fun("@gtr", a, b) %}
+comp -> comp ">=" let_in {% ([a, _, b]) => Fun("@geq", a, b) %}
+comp -> comp "==" let_in {% ([a, _, b]) => Fun("@equ", a, b) %}
+comp -> let_in {% id %}
 
 let_in -> "let" expr "=" expr "in" expr {% d => LetIn(d[1], d[3], d[5]) %}
 let_in -> if {% id %}
@@ -77,18 +85,12 @@ multdiv -> multdiv "%" pow {% ([a, _, b]) => Fun("@mod", a, b) %}
 multdiv -> pow {% id %}
 
 pow -> pow "**" comp {% ([a, _, b]) => Fun("**", a, b) %}
-pow -> comp {% id %}
-
-comp -> comp "<"  cons {% ([a, _, b]) => Fun("@lss", a, b) %}
-comp -> comp "<=" cons {% ([a, _, b]) => Fun("@leq", a, b) %}
-comp -> comp ">"  cons {% ([a, _, b]) => Fun("@gtr", a, b) %}
-comp -> comp ">=" cons {% ([a, _, b]) => Fun("@geq", a, b) %}
-comp -> comp "==" cons {% ([a, _, b]) => Fun("@equ", a, b) %}
-comp -> term {% id %}
+pow -> term {% id %}
 
 term -> %symb {% ([s]) => Fun(s.value) %}
 term -> var {% id %}
 term -> %nil {% () => Fun('Nil') %}
+term -> %unit {% () => Fun('Unit') %}
 term -> paren {% id %}
 
 paren -> "(" expr ")" {% d => d[1] %}

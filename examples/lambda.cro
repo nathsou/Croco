@@ -1,1 +1,67 @@
-Main = (\x -> x * x) 3
+IsNil = \l -> l == []
+
+Not True = False
+Not False = True
+
+Assert [] = Success
+Assert (test:tests) = if test then Assert tests else Failure
+
+Double = \x -> [x, x]
+Shrink = \[x, x] -> x
+
+Divisible a b = a % b == 0
+
+Divisors 0 = []
+Divisors 1 = [1]
+Divisors n = Divisors' n 2 [1]
+Divisors' n i acc = if i * i >= n then MirrorDivisors n i acc else Divisors' n (i + 1) (if Divisible n i then i:acc else acc)
+
+Div a b = a / b
+MirrorDivisors n i divs = MirrorDivisors' n i (Prepend divs (Map (Div n) divs))
+MirrorDivisors' n i divs = if i * i == n then i : divs else divs
+
+Prepend as [] = as
+Prepend [] bs = bs
+Prepend a:as bs = a : (Prepend as bs)
+
+Append as [] = as
+Append [] bs = bs
+Append a:as bs = a : (Append as bs)
+
+Len [] = 0
+Len h:tl = (Len tl) + 1
+
+Map f [] = []
+Map f h:tl = (f h) : (Map f tl)
+
+Range to to = [to]
+Range from to = from : (Range (from + 1) to)
+
+Filter pred [] = []
+Filter pred h:tl = if (pred h) then h : (Filter pred tl) else Filter pred tl
+
+IsPrime n = Len (Divisors n) == 2
+
+Sum [] = 0
+Sum h:tl = h + (Sum tl)
+
+Prod [] = 1
+Prod h:tl = h * (Prod tl)
+
+Rev lst = Rev' lst []
+Rev' [] rev = rev
+Rev' h:tl acc = Rev' tl h:acc
+
+Partition pred lst = Partition' pred lst [[], []]
+Partition' pred [] [as, bs] = [Rev as, Rev bs]
+Partition' pred h:tl [as, bs] = Partition' pred tl (if (pred h) then [h:as, bs] else [as, h:bs])
+
+Less a b = b < a
+
+Sort [] = []
+Sort h:tl = Sort' h (Partition (Less h) tl)
+Sort' h [as, bs] = Prepend (Sort as) (h : (Sort bs))
+
+Fact n = Prod (Range 1 n)
+
+Main = Sort (Filter IsPrime (Divisors (Fact 10)))
