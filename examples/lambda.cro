@@ -1,14 +1,3 @@
-IsNil = \l -> l == []
-
-Not True = False
-Not False = True
-
-Assert [] = Success
-Assert (test:tests) = if test then Assert tests else Failure
-
-Double = \x -> [x, x]
-Shrink = \[x, x] -> x
-
 Fold f lst base = Fold' f lst base
 Fold' f [] acc = acc
 Fold' f h:tl acc = Fold' f tl (f h acc)
@@ -43,30 +32,22 @@ Filter pred lst = Rev (Fold (FilterL pred) lst [])
 
 IsPrime n = Len (Divisors n) == 2
 
-Prod lst = Fold (\a b -> a * b) lst 1
-Sum lst = Fold (\a b -> a + b) lst 0
+Prod lst = Fold (*) lst 1
+Sum lst = Fold (+) lst 0
 
 Rev lst = Rev' lst []
 Rev' [] rev = rev
 Rev' h:tl acc = Rev' tl h:acc
 
-Partition pred lst = Partition' pred lst [[], []]
-Partition' pred [] [as, bs] = [Rev as, Rev bs]
-Partition' pred h:tl [as, bs] = Partition' pred tl (if (pred h) then [h:as, bs] else [as, h:bs])
-
-TakeWhile pred lst = TakeWhile' pred lst [] Continue
-TakeWhile' pred [] acc s = Rev acc
-TakeWhile' pred lst (a:acc) Stop = Rev acc
-TakeWhile' pred h:tl acc Continue = TakeWhile' pred tl (h:acc) (if (pred h) then Continue else Stop)
+Partition pred lst = Partition' pred lst ([], [])
+Partition' pred [] (as, bs) = (Rev as, Rev bs)
+Partition' pred h:tl (as, bs) = Partition' pred tl (if pred h then (h:as, bs) else (as, h:bs))
 
 Sort [] = []
-Sort h:tl = Sort' h (Partition (\n -> n < h) tl)
-Sort' h [as, bs] = Prepend (Sort as) (h : (Sort bs))
+Sort h:tl = let (as, bs) = Partition (< h) tl in (Sort as) `Prepend` (h:(Sort bs))
 
 Factorize n = Filter IsPrime (Divisors n)
 
 Fact n = Prod (Range 1 n)
 
-PrimesSq = TakeWhile (\n -> n < 1000) (Map (\n -> n * n) (Filter IsPrime (Range 1 1000)))
-
-Main = PrimesSq
+Main = Sort (Rev (Range 1 100))

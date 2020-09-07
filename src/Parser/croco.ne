@@ -36,6 +36,7 @@ lexer.next = (next => () => {
 })(lexer.next);
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
+const Var = name => ({ type: 'var', name });
 const App = (f, x) => Fun('app', f, x);
 
 const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
@@ -47,6 +48,22 @@ const lambdaAux = (args, rhs) => {
 };
 
 const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
+
+const opMap = {
+  '+': '@add',
+  '-': '@sub',
+  '*': '@mult',
+  '/': '@div',
+  '**': '@pow',
+  '%': '@mod',
+  '==': '@equ',
+  '<': '@lss',
+  '<=': '@leq',
+  '>': '@gtr',
+  '>=': '@geq',
+  ':': ':'
+};
+
 %}
 
 @lexer lexer
@@ -105,7 +122,27 @@ multdiv -> multdiv "%" pow {% ([a, _, b]) => Fun("@mod", a, b) %}
 multdiv -> pow {% id %}
 
 pow -> pow "**" comp {% ([a, _, b]) => Fun("**", a, b) %}
-pow -> term {% id %}
+pow -> op_fun {% id %}
+
+op_fun -> "(" %binop ")" {%
+  d => Lambda(
+    [Var('__a'), Var('__b')],
+    Fun(opMap[d[1].value], Var('__a'), Var('__b'))
+  )
+%}
+op_fun -> "(" expr %binop ")" {%
+  d => Lambda(
+    [Var('__b')],
+    Fun(opMap[d[2].value], d[1], Var('__b'))
+  )
+%}
+op_fun -> "(" %binop expr ")" {%
+  d => Lambda(
+    [Var('__a')],
+    Fun(opMap[d[1].value], Var('__a'), d[2])
+  )
+%}
+op_fun -> term {% id %}
 
 term -> %symb {% ([s]) => Fun(s.value) %}
 term -> var {% id %}

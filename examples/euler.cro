@@ -44,21 +44,21 @@ Map f [] = []
 Map f h:tl = (f h) : (Map f tl)
 Iter (NextMap f tl) = Map f (Iter tl)
 
-Len = Fold (\x len -> len + 1) 0
+Len = Fold (\n len -> len + 1) 0
 
 Primes = Filter IsPrime Nats
 
 Divisible a b = a % b == 0
 
-Sum = Fold (\n acc -> n + acc) 0
-Prod = Fold (\n acc -> n * acc) 1
+Sum = Fold (+) 0
+Prod = Fold (*) 1
 
 Fold f acc [] = acc
 Fold f acc EmptyIt = acc
 Fold f acc h:tl = Fold f (f h acc) tl
 Fold f acc (It h tl) = Fold f (f h acc) (Iter tl)
 
-Euler 1 = Sum (TakeWhile (\n -> n < 1000) (Filter (\n -> (Divisible n 3) `Or` (\() -> Divisible n 5)) Nats))
+Euler 1 = Sum (TakeWhile (< 1000) (Filter (\n -> (Divisible n 3) `Or` (\() -> Divisible n 5)) Nats))
 
 Fibs = Fibs' 1 2
 Fibs' a b = It a (NextFib b (a + b))
@@ -66,7 +66,7 @@ Iter (NextFib a b) = Fibs' a b
 
 Even n = Divisible n 2
 
-Euler 2 = Sum (TakeWhile (\n -> n < 4000000) (Filter Even Fibs))
+Euler 2 = Sum (TakeWhile (< 4000000) (Filter Even Fibs))
 
 Factorize 1 = []
 Factorize 2 = [2]
@@ -120,7 +120,7 @@ SmallestMultiple' m n i = SmallestMultiple' m (if Not (Divisible n i) then n * (
 
 Euler 5 = SmallestMultiple 20
 
-SumSquareDiff n = let [a, b] = [Sum (Take (n + 1) (Map (\n -> n * n) Nats)), Sum (Take (n + 1) Nats)] in (b * b) - a
+SumSquareDiff n = let (a, b) = (Sum (Take (n + 1) (Map (\n -> n * n) Nats)), Sum (Take (n + 1) Nats)) in (b * b) - a
 
 Euler 6 = SumSquareDiff 100
 
@@ -158,7 +158,7 @@ Scan' f acc EmptyIt = EmptyIt
 Scan' f acc (It h tl) = let next = f h acc in It next (NextScan f next tl)
 Iter (NextScan f acc tl) = Scan' f acc (Iter tl)
 
-Triangles = Scan (\h acc -> h + acc) 0 (NatsFrom 1)
+Triangles = Scan (+) 0 (NatsFrom 1)
 
 DivisorsCount n = Prod (Map (\(n, e) -> e + 1) (RunLength (Factorize n)))
 
@@ -220,4 +220,4 @@ IsSome x = False
 
 Fact n = Prod (RangeIt 1 n)
 
-Main = Euler 15
+Main = Take 100 Triangles

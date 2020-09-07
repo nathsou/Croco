@@ -5,6 +5,7 @@
 function id(d: any[]): any { return d[0]; }
 declare var backtick: any;
 declare var symb: any;
+declare var binop: any;
 declare var nil: any;
 declare var unit: any;
 declare var varname: any;
@@ -45,6 +46,7 @@ lexer.next = (next => () => {
 })(lexer.next);
 
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
+const Var = name => ({ type: 'var', name });
 const App = (f, x) => Fun('app', f, x);
 
 const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
@@ -56,6 +58,22 @@ const lambdaAux = (args, rhs) => {
 };
 
 const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
+
+const opMap = {
+  '+': '@add',
+  '-': '@sub',
+  '*': '@mult',
+  '/': '@div',
+  '**': '@pow',
+  '%': '@mod',
+  '==': '@equ',
+  '<': '@lss',
+  '<=': '@leq',
+  '>': '@gtr',
+  '>=': '@geq',
+  ':': ':'
+};
+
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -126,7 +144,26 @@ const grammar: Grammar = {
     {"name": "multdiv", "symbols": ["multdiv", {"literal":"%"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mod", a, b)},
     {"name": "multdiv", "symbols": ["pow"], "postprocess": id},
     {"name": "pow", "symbols": ["pow", {"literal":"**"}, "comp"], "postprocess": ([a, _, b]) => Fun("**", a, b)},
-    {"name": "pow", "symbols": ["term"], "postprocess": id},
+    {"name": "pow", "symbols": ["op_fun"], "postprocess": id},
+    {"name": "op_fun", "symbols": [{"literal":"("}, (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": 
+        d => Lambda(
+          [Var('__a'), Var('__b')],
+          Fun(opMap[d[1].value], Var('__a'), Var('__b'))
+        )
+        },
+    {"name": "op_fun", "symbols": [{"literal":"("}, "expr", (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": 
+        d => Lambda(
+          [Var('__b')],
+          Fun(opMap[d[2].value], d[1], Var('__b'))
+        )
+        },
+    {"name": "op_fun", "symbols": [{"literal":"("}, (lexer.has("binop") ? {type: "binop"} : binop), "expr", {"literal":")"}], "postprocess": 
+        d => Lambda(
+          [Var('__a')],
+          Fun(opMap[d[1].value], Var('__a'), d[2])
+        )
+        },
+    {"name": "op_fun", "symbols": ["term"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("symb") ? {type: "symb"} : symb)], "postprocess": ([s]) => Fun(s.value)},
     {"name": "term", "symbols": ["var"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("nil") ? {type: "nil"} : nil)], "postprocess": () => Fun('Nil')},
