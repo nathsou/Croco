@@ -3,8 +3,7 @@
 // Bypasses TS6133. Allow declared but unused functions.
 // @ts-ignore
 function id(d: any[]): any { return d[0]; }
-declare var lbracket: any;
-declare var rbracket: any;
+declare var backtick: any;
 declare var symb: any;
 declare var nil: any;
 declare var unit: any;
@@ -33,6 +32,7 @@ const lexer = moo.compile({
   lbracket: '[',
   rbracket: ']',
   lambda: '\\',
+  backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
 
@@ -108,10 +108,16 @@ const grammar: Grammar = {
     {"name": "app", "symbols": ["cons"], "postprocess": id},
     {"name": "cons", "symbols": ["list", {"literal":":"}, "cons"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
     {"name": "cons", "symbols": ["list"], "postprocess": id},
-    {"name": "list", "symbols": [(lexer.has("lbracket") ? {type: "lbracket"} : lbracket), "list_elems", (lexer.has("rbracket") ? {type: "rbracket"} : rbracket)], "postprocess": d => d[1]},
+    {"name": "list", "symbols": [{"literal":"["}, "list_elems", {"literal":"]"}], "postprocess": d => d[1]},
     {"name": "list_elems", "symbols": ["expr"], "postprocess": ([e]) => Fun(':', e, Fun('Nil'))},
     {"name": "list_elems", "symbols": ["expr", {"literal":","}, "list_elems"], "postprocess": ([e, _, es]) => Fun(':', e, es)},
-    {"name": "list", "symbols": ["addsub"], "postprocess": id},
+    {"name": "list", "symbols": ["tuple"], "postprocess": id},
+    {"name": "tuple", "symbols": [{"literal":"("}, "tuple_elems", {"literal":")"}], "postprocess": d => d[1]},
+    {"name": "tuple_elems", "symbols": ["expr", {"literal":","}, "expr"], "postprocess": ([a, _, b]) => Fun(';', a, Fun(';', b, Fun('Unit')))},
+    {"name": "tuple_elems", "symbols": ["expr", {"literal":","}, "tuple_elems"], "postprocess": ([e, _, es]) => Fun(';', e, es)},
+    {"name": "tuple", "symbols": ["custom_op"], "postprocess": id},
+    {"name": "custom_op", "symbols": ["custom_op", (lexer.has("backtick") ? {type: "backtick"} : backtick), (lexer.has("symb") ? {type: "symb"} : symb), (lexer.has("backtick") ? {type: "backtick"} : backtick), "expr"], "postprocess": d => App(App(Fun(d[2].value), d[0]), d[4])},
+    {"name": "custom_op", "symbols": ["addsub"], "postprocess": id},
     {"name": "addsub", "symbols": ["addsub", {"literal":"+"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@add", a, b)},
     {"name": "addsub", "symbols": ["addsub", {"literal":"-"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@sub", a, b)},
     {"name": "addsub", "symbols": ["multdiv"], "postprocess": id},

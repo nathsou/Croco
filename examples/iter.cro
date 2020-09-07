@@ -1,22 +1,12 @@
-All pred [] = True
-All pred h:tl = if (pred h) then (All pred tl) else False
-
-Not True = False
-Not False = True
-
 Take 0 it = []
-Take n EmptyIt = []
-Take n (It h tl) = h : (Take (n - 1) (Iter tl))
+Take n () = []
+Take n (v, next) = v : (Take (n - 1) (Iter next))
 
-TakeAll EmptyIt = []
-TakeAll (It h tl) = h : (TakeAll (Iter tl))
+TakeAll () = []
+TakeAll (v, next) = v : (TakeAll (Iter next))
 
-TakeWhile pred EmptyIt = []
-TakeWhile pred (It h tl) = if pred h then h : (TakeWhile pred (Iter tl)) else []
-
-Filter pred EmptyIt = EmptyIt
-Filter pred (It h tl) = if pred h then It h (NextFilter pred tl) else Filter pred (Iter tl)
-Iter (NextFilter pred tl) = Filter pred (Iter tl)
+TakeWhile pred () = []
+TakeWhile pred (v, next) = if pred v then v : (TakeWhile pred (Iter next)) else []
 
 IsPrime 0 = False
 IsPrime 1 = False
@@ -24,28 +14,27 @@ IsPrime 2 = True
 IsPrime n = if n % 2 == 0 then False else IsPrime' n 3
 IsPrime' n i = if i * i > n then True else if n % i == 0 then False else IsPrime' n (i + 2)
 
-NatsFrom n = It n (NextNat n)
+NatsFrom n = (n, NextNat n)
 Iter (NextNat n) = NatsFrom (n + 1)
 
 Nats = NatsFrom 0
 
-Next (It h tl) = Iter tl
+Next () = ()
+Next (v, next) = Iter next
 
-Nth EmptyIt n = None
-Nth (It h tl) 0 = Some h
-Nth x 0 = None
-Nth (It h tl) n = Nth (Iter tl) (n - 1)
+Nth n () = None
+Nth 0 (v, next) = Some v
+Nth 0 x = None
+Nth n (v, next) = Nth (n - 1) (Iter next)
 
-Map f EmptyIt = EmptyIt
-Map f (It h tl) = It (f h) (NextMap f tl)
-Iter (NextMap f tl) = Map f (Iter tl)
+Map f () = ()
+Map f (v, next) = (f v, NextMap f next)
+Iter (NextMap f next) = Map f (Iter next)
 
-Len s = Len' s 0
-Len' EmptyIt len = len
-Len' (It h tl) len = Len' tl (len + 1)
-Len' [] len = len 
-Len' h:tl len = Len' tl (len + 1)
+Filter f () = ()
+Filter f (v, next) = if f v then (v, NextFilter f next) else Filter f (Iter next)
+Iter (NextFilter f next) = Filter f (Iter next)
 
 Primes = Filter IsPrime Nats
 
-Main = Take 10 Primes
+Main = Take 1000 Primes

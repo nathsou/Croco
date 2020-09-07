@@ -69,8 +69,15 @@ export const postprocessTerm = (term: grfTerm): string => {
 
     switch (f) {
         case ':':
-            const [h, tl] = term.args;
-            return `[${postprocessList(h, tl)}]`;
+            {
+                const [h, tl] = term.args;
+                return `[${postprocessList(h, tl)}]`;
+            }
+        case ';':
+            {
+                const [h, tl] = term.args;
+                return `(${postprocessList(h, tl, 'Unit', ';')})`;
+            }
         case 'app':
             const [f, x] = term.args;
             return `(${postprocessTerm(f)} ${postprocessTerm(x)})`;
@@ -79,16 +86,21 @@ export const postprocessTerm = (term: grfTerm): string => {
     }
 };
 
-export const postprocessList = (head: grfTerm, tail: grfTerm): string => {
-    if (isVar(tail) || (tail.name !== ':' && tail.name !== 'Nil')) {
-        throw new Error(`Expected ':' or 'Nil' at the tail of a list, got: ${grfShowterm(tail)}`);
+export const postprocessList = (
+    head: grfTerm,
+    tail: grfTerm,
+    nil = 'Nil',
+    cons = ':'
+): string => {
+    if (isVar(tail) || (tail.name !== cons && tail.name !== nil)) {
+        throw new Error(`Expected '${cons}' or '${nil}' at the end of a ${nil === 'Nil' ? 'list' : 'tuple'}, got: ${grfShowterm(tail)}`);
     }
 
-    if (tail.name === 'Nil') return postprocessTerm(head);
+    if (tail.name === nil) return postprocessTerm(head);
 
     const [h, tl] = tail.args;
 
-    return `${postprocessTerm(head)}, ${postprocessList(h, tl)}`
+    return `${postprocessTerm(head)}, ${postprocessList(h, tl, nil, cons)}`
 };
 
 export const showExpr = (expr: Expr): string => {

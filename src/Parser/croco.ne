@@ -23,6 +23,7 @@ const lexer = moo.compile({
   lbracket: '[',
   rbracket: ']',
   lambda: '\\',
+  backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
 
@@ -81,10 +82,18 @@ app -> cons {% id %}
 cons -> list ":" cons {% ([h, _, tl]) => Fun(':', h, tl) %}
 cons -> list {% id %}
 
-list -> %lbracket list_elems %rbracket {% d => d[1] %}
+list -> "[" list_elems "]" {% d => d[1] %}
 list_elems -> expr {% ([e]) => Fun(':', e, Fun('Nil')) %}
 list_elems -> expr "," list_elems {% ([e, _, es]) => Fun(':', e, es) %}
-list -> addsub {% id %}
+list -> tuple {% id %}
+
+tuple -> "(" tuple_elems ")" {% d => d[1] %}
+tuple_elems -> expr "," expr {% ([a, _, b]) => Fun(';', a, Fun(';', b, Fun('Unit')))  %}
+tuple_elems -> expr "," tuple_elems {% ([e, _, es]) => Fun(';', e, es) %}
+tuple -> custom_op {% id %}
+
+custom_op -> custom_op %backtick %symb %backtick expr {% d => App(App(Fun(d[2].value), d[0]), d[4]) %}
+custom_op -> addsub {% id %}
 
 addsub -> addsub "+" multdiv {% ([a, _, b]) => Fun("@add", a, b) %}
 addsub -> addsub "-" multdiv {% ([a, _, b]) => Fun("@sub", a, b) %}
