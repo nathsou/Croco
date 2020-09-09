@@ -23,6 +23,8 @@ const lexer = moo.compile({
   lbracket: '[',
   rbracket: ']',
   lambda: '\\',
+  comment: /#.*?$/,
+  string: /"(?:\\["\\]|[^\n"\\])*"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
@@ -30,7 +32,7 @@ const lexer = moo.compile({
 // ignore whitespaces and newlines in output tokenization
 lexer.next = (next => () => {
 	let tok;
-	while ((tok = next.call(lexer)) && tok.type === 'ws');
+	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'comment'));
     // console.log(tok);
 	return tok;
 })(lexer.next);
@@ -38,6 +40,7 @@ lexer.next = (next => () => {
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const Var = name => ({ type: 'var', name });
 const App = (f, x) => Fun('app', f, x);
+const Cons = (h, tl) => Fun(':', h, tl);
 
 const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
 
@@ -48,6 +51,13 @@ const lambdaAux = (args, rhs) => {
 };
 
 const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
+
+const List = vals => {
+  if (vals.length === 0) return Fun('Nil');
+  return Cons(vals[0], List(vals.slice(1)));
+};
+
+const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
 
 const opMap = {
   '+': '@add',
@@ -142,7 +152,10 @@ op_fun -> "(" %binop expr ")" {%
     Fun(opMap[d[1].value], Var('__a'), d[2])
   )
 %}
-op_fun -> term {% id %}
+op_fun -> str {% id %}
+
+str -> %string {% ([str]) => Str(str.value.substr(1, str.value.length - 2)) %}
+str -> term {% id %}
 
 term -> %symb {% ([s]) => Fun(s.value) %}
 term -> var {% id %}

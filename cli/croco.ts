@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
-import { arithmeticExternals, fun, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
+import { arithmeticExternals, head, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, rhs, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { postprocessTerm } from "../src/Parser/Expr";
 import { parse } from "../src/Parser/Parser";
@@ -7,7 +7,7 @@ import { parse } from "../src/Parser/Parser";
 const [src, out, target] = process.argv.slice(2);
 
 const printUsage = () => {
-    console.info('usage: croco src.cro [out.grf]');
+    console.info('usage: croco src.cro [out] [js/haskell/ocaml/girafe]');
     process.exit(0);
 };
 
@@ -51,7 +51,7 @@ if (out) {
     // console.log(postprocessTerm(norm(fun('Main'))));
 
     const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
-    normalize(fun('Main')).then(out => {
+    normalize(rhs(head(trs.get('Main')))).then(out => {
         console.log(postprocessTerm(out));
     });
 }

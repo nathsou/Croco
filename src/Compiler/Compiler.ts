@@ -1,5 +1,6 @@
 import { check, checkArity, checkNoDuplicates, checkNoFreeVars, compile as grfCompile, ExternalsFactory, isOk, leftLinearize, mapify, normalizeLhsArgs, simulateIfs, TRS, unwrap } from 'girafe';
 import { grfRuleOf, Prog } from "../Parser/Expr";
+import { checkMain } from './Passes/CheckMain';
 import { removeLambdas } from './Passes/Lambdas';
 
 export const compile = (rules: Prog, externals: ExternalsFactory<string>): TRS => {
@@ -8,6 +9,7 @@ export const compile = (rules: Prog, externals: ExternalsFactory<string>): TRS =
     const res = grfCompile(
         trs,
         check(
+            checkMain,
             checkNoFreeVars,
             checkArity,
             checkNoDuplicates
@@ -18,10 +20,14 @@ export const compile = (rules: Prog, externals: ExternalsFactory<string>): TRS =
     );
 
     if (isOk(res)) {
-        return unwrap(res);
-    } else {
-        console.error(unwrap(res).join('\n'));
-    }
+        const out = unwrap(res);
 
-    return trs;
+        return out;
+    } else {
+        for (const err of unwrap(res)) {
+            console.error(err);
+        }
+
+        process.exit();
+    }
 };

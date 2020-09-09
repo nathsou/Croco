@@ -101,11 +101,13 @@ Rev' h:tl acc = Rev' tl (h:acc)
 Palindrome n = PalindromeList (Digits n)
 PalindromeList lst = lst == (Rev lst)
 
-And True b = b ()
-And False b = False
+# The second argument is lazy
+True `And` b = b ()
+False `And` b = False
 
-Or True b = True
-Or False b = b ()
+# The second argument is lazy
+True `Or` b = True
+False `Or` b = b ()
 
 Euler 4 = LargestPalindrome 999 0
 LargestPalindrome a max = if a >= 100 then let m = LargestPalindrome' a 999 max in LargestPalindrome (a - 1) (Gtr m max) else max
@@ -220,4 +222,9 @@ IsSome x = False
 
 Fact n = Prod (RangeIt 1 n)
 
-Main = Take 100 Triangles
+If True a b = a ()
+If False a b = b ()
+
+# Test comment
+
+Main = "Hello"

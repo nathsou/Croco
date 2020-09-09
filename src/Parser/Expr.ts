@@ -1,4 +1,4 @@
-import { isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm, decons } from 'girafe';
+import { decons, isFun, isVar, Rule as grfRule, showTerm as grfShowterm, Term as grfTerm } from 'girafe';
 
 export type Prog<E = Expr> = RuleDecl<E>[];
 export type Decl = RuleDecl;
@@ -58,6 +58,18 @@ export const showTerm = (term: Term): string => {
     return `(${term.name} ${term.args.map(showTerm).join(' ')})`;
 };
 
+export const fromList = (lst: grfTerm, acc: grfTerm[] = []): grfTerm[] => {
+    if (!isFun(lst, ':') && !isFun(lst, 'Nil')) {
+        throw new Error(`Trying to convert an invalid list to an array: ${grfShowterm(lst)}`);
+    }
+
+    if (lst.name === 'Nil') return acc;
+
+    const [h, tl] = lst.args;
+    acc.push(h);
+    return fromList(tl, acc);
+};
+
 export const postprocessTerm = (term: grfTerm): string => {
     if (isVar(term)) return term;
     if (term.name === 'Nil') return '[]';
@@ -80,9 +92,14 @@ export const postprocessTerm = (term: grfTerm): string => {
             }
         case 'app':
             const [f, x] = term.args;
+
+            if (isFun(f, 'String')) {
+                return '"' + String.fromCharCode(...fromList(x).map(t => parseInt((t as Fun).name))) + '"';
+            }
+
             return `(${postprocessTerm(f)} ${postprocessTerm(x)})`;
         default:
-            return grfShowterm(term);
+            return `(${term.name} ${term.args.map(postprocessTerm).join(' ')})`;
     }
 };
 

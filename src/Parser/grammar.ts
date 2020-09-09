@@ -6,6 +6,7 @@ function id(d: any[]): any { return d[0]; }
 declare var backtick: any;
 declare var symb: any;
 declare var binop: any;
+declare var string: any;
 declare var nil: any;
 declare var unit: any;
 declare var varname: any;
@@ -33,6 +34,8 @@ const lexer = moo.compile({
   lbracket: '[',
   rbracket: ']',
   lambda: '\\',
+  comment: /#.*?$/,
+  string: /"(?:\\["\\]|[^\n"\\])*"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
@@ -40,7 +43,7 @@ const lexer = moo.compile({
 // ignore whitespaces and newlines in output tokenization
 lexer.next = (next => () => {
 	let tok;
-	while ((tok = next.call(lexer)) && tok.type === 'ws');
+	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'comment'));
     // console.log(tok);
 	return tok;
 })(lexer.next);
@@ -48,6 +51,7 @@ lexer.next = (next => () => {
 const Fun = (name, ...args) => ({ type: 'fun', name, args });
 const Var = name => ({ type: 'var', name });
 const App = (f, x) => Fun('app', f, x);
+const Cons = (h, tl) => Fun(':', h, tl);
 
 const Lambda = (args, rhs) => lambdaAux([...args].reverse(), rhs);
 
@@ -58,6 +62,13 @@ const lambdaAux = (args, rhs) => {
 };
 
 const LetIn = (x, val, rhs) => App(Lambda([x], rhs), val);
+
+const List = vals => {
+  if (vals.length === 0) return Fun('Nil');
+  return Cons(vals[0], List(vals.slice(1)));
+};
+
+const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
 
 const opMap = {
   '+': '@add',
@@ -163,7 +174,9 @@ const grammar: Grammar = {
           Fun(opMap[d[1].value], Var('__a'), d[2])
         )
         },
-    {"name": "op_fun", "symbols": ["term"], "postprocess": id},
+    {"name": "op_fun", "symbols": ["str"], "postprocess": id},
+    {"name": "str", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([str]) => Str(str.value.substr(1, str.value.length - 2))},
+    {"name": "str", "symbols": ["term"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("symb") ? {type: "symb"} : symb)], "postprocess": ([s]) => Fun(s.value)},
     {"name": "term", "symbols": ["var"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("nil") ? {type: "nil"} : nil)], "postprocess": () => Fun('Nil')},

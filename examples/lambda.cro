@@ -7,28 +7,26 @@ Divisible a b = a % b == 0
 Divisors 0 = []
 Divisors 1 = [1]
 Divisors n = Divisors' n 2 [1]
-Divisors' n i acc = if i * i >= n then MirrorDivisors n i acc else Divisors' n (i + 1) (if Divisible n i then i:acc else acc)
+Divisors' n i acc = if i * i >= n then MirrorDivisors n i acc else Divisors' n (i + 1) (if n `Divisible` i then i:acc else acc)
 
-Div a b = a / b
-MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (Div n) divs)
-MirrorDivisors' n i leftDivs rightDivs = if i * i == n then Prepend leftDivs (i : rightDivs) else Prepend leftDivs rightDivs
+MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (n /) divs)
+MirrorDivisors' n i leftDivs rightDivs = if i * i == n then leftDivs `Prepend` (i : rightDivs) else leftDivs `Prepend` rightDivs
 
 Prepend as [] = as
 Prepend [] bs = bs
-Prepend a:as bs = a : (Prepend as bs)
+Prepend a:as bs = a : (as `Prepend` bs)
 
-Append as bs = Prepend bs as
+Append as bs = bs `Prepend` as
 
 Len lst = Fold (\h acc -> acc + 1) lst 0
 
-Map f lst = Rev (Fold ((\f h acc -> (f h):acc) f) lst [])
+Map f lst = Rev (Fold (\h acc -> (f h):acc) lst [])
 
 Range from to = Range' from to [] (from == to)
 Range' from to rng True = rng
 Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
 
-FilterL pred h acc = if (pred h) then (h:acc) else acc
-Filter pred lst = Rev (Fold (FilterL pred) lst [])
+Filter pred lst = Rev (Fold (\h acc -> if pred h then h:acc else acc) lst [])
 
 IsPrime n = Len (Divisors n) == 2
 
@@ -44,7 +42,7 @@ Partition' pred [] (as, bs) = (Rev as, Rev bs)
 Partition' pred h:tl (as, bs) = Partition' pred tl (if pred h then (h:as, bs) else (as, h:bs))
 
 Sort [] = []
-Sort h:tl = let (as, bs) = Partition (< h) tl in (Sort as) `Prepend` (h:(Sort bs))
+Sort h:tl = let (smaller, bigger) = Partition (< h) tl in (Sort smaller) `Prepend` (h:(Sort bigger))
 
 Factorize n = Filter IsPrime (Divisors n)
 
