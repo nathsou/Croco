@@ -10,7 +10,6 @@ declare var string: any;
 declare var nil: any;
 declare var unit: any;
 declare var varname: any;
-declare var nl: any;
 
 const moo = require('moo');
 
@@ -33,6 +32,7 @@ const lexer = moo.compile({
   nil: '[]',
   lbracket: '[',
   rbracket: ']',
+  semicolon: ';',
   lambda: '\\',
   comment: /#.*?$/,
   string: /"(?:\\["\\]|[^\n"\\])*"/,
@@ -43,7 +43,7 @@ const lexer = moo.compile({
 // ignore whitespaces and newlines in output tokenization
 lexer.next = (next => () => {
 	let tok;
-	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'comment'));
+	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'nl'));
     // console.log(tok);
 	return tok;
 })(lexer.next);
@@ -184,14 +184,10 @@ const grammar: Grammar = {
     {"name": "term", "symbols": ["paren"], "postprocess": id},
     {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
     {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},
-    {"name": "rule$ebnf$1", "symbols": []},
-    {"name": "rule$ebnf$1", "symbols": ["rule$ebnf$1", (lexer.has("nl") ? {type: "nl"} : nl)], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "rule", "symbols": ["expr", {"literal":"="}, "rule$ebnf$1", "expr"], "postprocess": ([lhs, _eq, _nls, rhs]) => ({ type: 'rule', lhs, rhs })},
+    {"name": "rule", "symbols": ["expr", {"literal":"="}, "expr", {"literal":";"}], "postprocess": ([lhs, _eq, rhs]) => ({ type: 'rule', lhs, rhs })},
     {"name": "rules", "symbols": ["non_empty_rules"], "postprocess": id},
     {"name": "non_empty_rules", "symbols": ["rule"], "postprocess": d => [d[0]]},
-    {"name": "non_empty_rules$ebnf$1", "symbols": [(lexer.has("nl") ? {type: "nl"} : nl)]},
-    {"name": "non_empty_rules$ebnf$1", "symbols": ["non_empty_rules$ebnf$1", (lexer.has("nl") ? {type: "nl"} : nl)], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "non_empty_rules", "symbols": ["non_empty_rules", "non_empty_rules$ebnf$1", "rule"], "postprocess": ([rs, _, r]) => [...rs, r]}
+    {"name": "non_empty_rules", "symbols": ["non_empty_rules", "rule"], "postprocess": ([rs, r]) => [...rs, r]}
   ],
   ParserStart: "main",
 };

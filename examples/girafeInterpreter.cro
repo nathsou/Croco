@@ -26,8 +26,11 @@ And False False = False
 
 ToUpper (String chars) = String (Map (\c -> if (c >= 97) `And` (c <= 122) then c - 32 else c) chars)
 
-IsFun (Fun (String chars) []) = True
-IsFun (Fun (String chars) h:tl) = True
+IsList [] = True
+IsList h:tl = True
+IsList x = False
+
+IsFun (Fun (String chars) args) = IsList args
 IsFun x = False
 
 IsVar (Var (String x)) = True
@@ -60,23 +63,30 @@ Zip' [] bs acc = Rev acc
 Zip' as [] acc = Rev acc
 Zip' a:as b:bs acc = Zip' as bs (a, b):acc
 
+# Martelli and Montanari's term unification algorithm
 Unify s t = Unify' [(s, t)] []
 Unify' [] subst = Some subst
 Unify' (Var a, Var a):ts subst = Unify' ts subst
 Unify' (Var a, t):ts subst = Unify' ts (a, t):subst
-Unify' (Fun f as, Fun f bs):tl subst = if (Len as == Len bs) then Unify' (Prepend (Zip as bs) tl) subst else None
+Unify' (Fun f as, Fun f bs):tl subst =
+    if (Len as == Len bs) then
+        Unify' (Prepend (Zip as bs) tl) subst
+    else None
 Unify' (Fun f as, Fun g bs):tl subst = None
 Unify' ts subst = None
 
 Peano 0 = Fun "0" []
 Peano n = Fun "S" [Peano n - 1] 
 
-TRS = let p = ParseTermDefined in Map (\(a, b) -> (p a, p b)) [("Add(a, 0)", "a"), ("Add(0, b)", "b"), ("Add(S(a), b)", "S(Add(a, b))"), ("Add(a, S(b))", "S(Add(a, b))")]
+ParseTRS rules =
+    let p = ParseTermDefined in
+    Map (\(a, b) -> (p a, p b)) rules
 
 Show t = String (Show' t)
 Show' (Var (String x)) = x
 Show' (Fun (String f) []) = f
-Show' (Fun (String f) args) = Prepend (Prepend f (Prepend (Chars "(") ((Chars (JoinWith ", " (Map Show (Rev args))))))) (Chars ")")
+Show' (Fun (String f) args) = 
+    Prepend (Prepend f (Prepend (Chars "(") ((Chars (JoinWith ", " (Map Show (Rev args))))))) (Chars ")")
 
 FindRule term [] = None
 FindRule t (lhs, rhs):rules = FindRule' t (Unify lhs t) (lhs, rhs) rules
@@ -90,7 +100,9 @@ FindSubst x (y, z):tl = FindSubst x tl
 Substitute (Var x) subst = FindSubst x subst
 Substitute (Fun f args) subst = Fun f (Map (\t -> Substitute t subst) args)
 
-Reduce (Fun f args) rules = let s = Fun f (Map (\t -> Normalize t rules) args) in Reduce' s (FindRule s rules)
+Reduce (Fun f args) rules =
+    let s = Fun f (Map (\t -> Normalize t rules) args) in
+    Reduce' s (FindRule s rules)
 Reduce (Var x) rules = (Var x, False)
 Reduce' t None = (t, False)
 Reduce' t (Some ((lhs, rhs), subst)) = (Substitute rhs subst, True)
@@ -101,16 +113,16 @@ Normalize' (t, False) rules = t
 
 CharCode (String [c]) = c
 
-IsDigit (String [c]) = (c >= CharCode "0") `And` (c <= CharCode "9")
+IsDigit (String [c]) = IsDigit c
 IsDigit c = (c >= CharCode "0") `And` (c <= CharCode "9")
 
-Success res out = Some (String res, String out)
+Success res out = Some (res, String out)
 
 Fail cs = None
 
-Satisfy test [] = Fail None
+Satisfy test [] = Fail []
 Satisfy test (String c):cs = Satisfy test c:cs
-Satisfy test c:cs = if test c then Success [c] cs else Fail c:cs
+Satisfy test c:cs = if test c then Success (String [c]) cs else Fail c:cs
 
 ParseDigit = Satisfy IsDigit
 ParseChar (String [c]) = Satisfy (== c)
@@ -145,13 +157,22 @@ ParseTerm = ParseFun `Alt` ParseVar
 Fst (a, b) = a
 
 ParseArgs = ParseArgs2 `Alt` (MapParser (\t -> [t]) ParseTerm)
-ParseArgs2 = MapParser (\(args, last) -> Append [last] args) ((Many (MapParser Fst (ParseTerm `Then` (ParseChar ",")))) `Then` ParseTerm)
+ParseArgs2 =
+    MapParser
+    (\(args, last) -> Append [last] args)
+    ((Many (MapParser Fst (ParseTerm `Then` (ParseChar ",")))) `Then` ParseTerm)
 
 LazyThen fst snd cs = Then (fst ()) (snd ()) cs
 
 ParseFun = ParseFun2 `Alt` ParseFun1
 ParseFun1 = MapParser (\f -> Fun f []) ParseSymb
-ParseFun2 = MapParser (\((f, args), p) -> Fun f args) (((\() -> MapParser Fst (ParseSymb `Then` (ParseChar "("))) `LazyThen` (\() -> ParseArgs)) `Then` (ParseChar ")"))
+ParseFun2 =
+    MapParser (\((f, args), p) -> Fun f args)
+    (
+        (\() ->
+        MapParser Fst 
+        (ParseSymb `Then` (ParseChar "("))) `LazyThen` (\() -> ParseArgs)) `Then` (ParseChar ")"
+    )
 
 ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) ((ParseLowerCase `Then` ParseAlphaNums))
 
@@ -171,4 +192,34 @@ Map f (Some x) = Some (f x)
 
 ParseTermDefined t = Unwrap (Map Fst (ParseTerm (Chars (RemoveSpaces t))))
 
-Main = let p = ParseTermDefined in Show (Normalize (p "Add(S(S(0)), S(S(S(0))))") TRS)
+PeanoTRS = ParseTRS [
+        ("Add(a, 0)", "a"),
+        ("Add(0, b)", "b"),
+        ("Add(S(a), b)", "S(Add(a, b))"),
+        ("Add(a, S(b))", "S(Add(a, b))"),
+        ("Mult(a, 0)", "0"),
+        ("Mult(0, b)", "0"),
+        ("Mult(S(a), b)", "Add(Mult(a, b), b)"),
+        ("Mult(a, S(b))", "Add(Mult(a, b), a)"),
+        ("1", "S(0)"),
+        ("2", "S(1)"),
+        ("3", "S(2)"),
+        ("4", "S(3)"),
+        ("5", "S(4)"),
+        ("6", "S(5)"),
+        ("7", "S(6)"),
+        ("8", "S(7)"),
+        ("9", "S(8)"),
+        ("10", "S(9)"),
+        ("P(0)", "0"),
+        ("P(S(n))", "n"),
+        ("Range(n)", "Range2(n, Nil)"),
+        ("Range2(0, acc)", "Cons(0, acc)"),
+        ("Range2(n, acc)", "Range2(P(n), Cons(n, acc))"),
+        ("Len(Nil)", "0"),
+        ("Len(Cons(h, tl))", "S(Len(tl))")
+    ]
+
+Norm (String term) trs = Normalize (ParseTermDefined (String term)) trs
+
+Main = Show (Norm "Len(Range(Mult(3, 7)))" PeanoTRS)

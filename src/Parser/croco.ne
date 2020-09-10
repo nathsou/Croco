@@ -22,6 +22,7 @@ const lexer = moo.compile({
   nil: '[]',
   lbracket: '[',
   rbracket: ']',
+  semicolon: ';',
   lambda: '\\',
   comment: /#.*?$/,
   string: /"(?:\\["\\]|[^\n"\\])*"/,
@@ -32,7 +33,7 @@ const lexer = moo.compile({
 // ignore whitespaces and newlines in output tokenization
 lexer.next = (next => () => {
 	let tok;
-	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'comment'));
+	while ((tok = next.call(lexer)) && (tok.type === 'ws' || tok.type === 'nl'));
     // console.log(tok);
 	return tok;
 })(lexer.next);
@@ -167,9 +168,9 @@ paren -> "(" expr ")" {% d => d[1] %}
 
 var -> %varname {% ([v]) => ({ type: 'var', name: v.value }) %}
 
-rule -> expr "=" %nl:* expr {% ([lhs, _eq, _nls, rhs]) => ({ type: 'rule', lhs, rhs }) %}
+rule -> expr "=" expr ";" {% ([lhs, _eq, rhs]) => ({ type: 'rule', lhs, rhs }) %}
 
 # rules -> _ null _ {% () => [] %}
 rules -> non_empty_rules {% id %}
 non_empty_rules -> rule {% d => [d[0]] %}
-non_empty_rules -> non_empty_rules %nl:+ rule {% ([rs, _, r]) => [...rs, r] %}
+non_empty_rules -> non_empty_rules rule {% ([rs, r]) => [...rs, r] %}

@@ -1,0 +1,15 @@
+Not True = False
+Not False = True
+
+Hello 1 = 2
+
+Test = [
+    1,
+    2,
+    3
+]
+
+Main =
+    let f = (* 3) in
+    let x = 7 in
+    f x
