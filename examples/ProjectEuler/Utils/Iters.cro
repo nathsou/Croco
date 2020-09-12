@@ -1,0 +1,54 @@
+# Set of rules on iterators
+
+TakeIt 0 it = []
+TakeIt n EmptyIt = []
+TakeIt n (It h tl) = h : (TakeIt (n - 1) (Iter tl))
+
+TakeItAll EmptyIt = []
+TakeItAll (It h tl) = h : (TakeItAll (Iter tl))
+
+TakeItWhile pred EmptyIt = []
+TakeItWhile pred (It h tl) = if pred h then h : (TakeItWhile pred (Iter tl)) else []
+
+FilterIt pred EmptyIt = EmptyIt
+FilterIt pred (It h tl) = if pred h then It h (NextFilter pred tl) else FilterIt pred (Iter tl)
+Iter (NextFilter pred tl) = FilterIt pred (Iter tl)
+
+NatsFrom n = It n (NextNat n)
+Iter (NextNat n) = NatsFrom (n + 1)
+
+Nats = NatsFrom 0
+
+RangeIt from to = IterWhile (\n -> n <= to) (NatsFrom from)
+
+Next (It h tl) = Iter tl
+
+NthIt _ EmptyIt = None
+NthIt 0 (It h tl) = Some h
+NthIt 0 _ = None
+NthIt n (It h tl) = NthIt (n - 1) (Iter tl)
+
+MapIt f EmptyIt = EmptyIt
+MapIt f (It h tl) = It (f h) (NextMap f tl)
+Iter (NextMap f tl) = MapIt f (Iter tl)
+
+FoldIt f acc EmptyIt = acc
+FoldIt f acc (It h tl) = FoldIt f (f h acc) (Iter tl)
+
+LenIt = FoldIt (\_ len -> len + 1) 0
+SumIt = FoldIt (+) 0
+ProdIt = FoldIt (*) 1
+
+IterWhile _ EmptyIt = EmptyIt
+IterWhile pred (It h tl) = if pred h then It h (NextIterWhile pred tl) else EmptyIt
+Iter (NextIterWhile pred tl) = IterWhile pred (Iter tl)
+
+ScanIt f base it = ScanIt' f base it
+ScanIt' f acc EmptyIt = EmptyIt
+ScanIt' f acc (It h tl) = let next = f h acc in It next (NextScan f next tl)
+Iter (NextScan f acc tl) = ScanIt' f acc (Iter tl)
+
+FindIt pred it = FindIt' pred it None
+FindIt' pred it (Some x) = Some x
+FindIt' pred EmptyIt b = None
+FindIt' pred (It h tl) None = FindIt' pred (Iter tl) (if pred h then Some h else None)

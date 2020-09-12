@@ -10,6 +10,7 @@ const lexer = moo.compile({
   else_: 'else',
   let_: 'let',
   in_: 'in',
+  any: '_',
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   arrow: '->',
@@ -75,6 +76,8 @@ const opMap = {
   ':': ':'
 };
 
+let underscoresCount = 0;
+
 %}
 
 @lexer lexer
@@ -87,17 +90,17 @@ lambda_args -> cons {% ([e]) => [e] %}
 lambda_args -> lambda_args cons {% ([es, e]) => [...es, e] %}
 
 lambda -> "\\" lambda_args "->" expr {% d => Lambda(d[1], d[3]) %}
-lambda -> comp {% id %}
-
-comp -> comp "<"  let_in {% ([a, _, b]) => Fun("@lss", a, b) %}
-comp -> comp "<=" let_in {% ([a, _, b]) => Fun("@leq", a, b) %}
-comp -> comp ">"  let_in {% ([a, _, b]) => Fun("@gtr", a, b) %}
-comp -> comp ">=" let_in {% ([a, _, b]) => Fun("@geq", a, b) %}
-comp -> comp "==" let_in {% ([a, _, b]) => Fun("@equ", a, b) %}
-comp -> let_in {% id %}
+lambda -> let_in {% id %}
 
 let_in -> "let" expr "=" expr "in" expr {% d => LetIn(d[1], d[3], d[5]) %}
-let_in -> if {% id %}
+let_in -> comp {% id %}
+
+comp -> comp "<"  if {% ([a, _, b]) => Fun("@lss", a, b) %}
+comp -> comp "<=" if {% ([a, _, b]) => Fun("@leq", a, b) %}
+comp -> comp ">"  if {% ([a, _, b]) => Fun("@gtr", a, b) %}
+comp -> comp ">=" if {% ([a, _, b]) => Fun("@geq", a, b) %}
+comp -> comp "==" if {% ([a, _, b]) => Fun("@equ", a, b) %}
+comp -> if {% id %}
 
 if -> "if" expr "then" expr "else" expr {% 
 ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
@@ -131,7 +134,6 @@ multdiv -> multdiv "*" pow {% ([a, _, b]) => Fun("@mult", a, b) %}
 multdiv -> multdiv "/" pow {% ([a, _, b]) => Fun("@div", a, b) %}
 multdiv -> multdiv "%" pow {% ([a, _, b]) => Fun("@mod", a, b) %}
 multdiv -> pow {% id %}
-
 pow -> pow "**" comp {% ([a, _, b]) => Fun("**", a, b) %}
 pow -> op_fun {% id %}
 
@@ -166,6 +168,7 @@ term -> paren {% id %}
 
 paren -> "(" expr ")" {% d => d[1] %}
 
+var -> "_" {% () => ({ type: 'var', name: `any_${underscoresCount++}` }) %}
 var -> %varname {% ([v]) => ({ type: 'var', name: v.value }) %}
 
 rule -> expr "=" expr ";" {% ([lhs, _eq, rhs]) => ({ type: 'rule', lhs, rhs }) %}

@@ -20,6 +20,7 @@ const lexer = moo.compile({
   else_: 'else',
   let_: 'let',
   in_: 'in',
+  any: '_',
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   arrow: '->',
@@ -85,6 +86,8 @@ const opMap = {
   ':': ':'
 };
 
+let underscoresCount = 0;
+
 
 interface NearleyToken {  value: any;
   [key: string]: any;
@@ -120,15 +123,15 @@ const grammar: Grammar = {
     {"name": "lambda_args", "symbols": ["cons"], "postprocess": ([e]) => [e]},
     {"name": "lambda_args", "symbols": ["lambda_args", "cons"], "postprocess": ([es, e]) => [...es, e]},
     {"name": "lambda", "symbols": [{"literal":"\\"}, "lambda_args", {"literal":"->"}, "expr"], "postprocess": d => Lambda(d[1], d[3])},
-    {"name": "lambda", "symbols": ["comp"], "postprocess": id},
-    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "let_in"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">"}, "let_in"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "let_in"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
-    {"name": "comp", "symbols": ["let_in"], "postprocess": id},
+    {"name": "lambda", "symbols": ["let_in"], "postprocess": id},
     {"name": "let_in", "symbols": [{"literal":"let"}, "expr", {"literal":"="}, "expr", {"literal":"in"}, "expr"], "postprocess": d => LetIn(d[1], d[3], d[5])},
-    {"name": "let_in", "symbols": ["if"], "postprocess": id},
+    {"name": "let_in", "symbols": ["comp"], "postprocess": id},
+    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "if"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "if"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">"}, "if"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">="}, "if"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "if"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
+    {"name": "comp", "symbols": ["if"], "postprocess": id},
     {"name": "if", "symbols": [{"literal":"if"}, "expr", {"literal":"then"}, "expr", {"literal":"else"}, "expr"], "postprocess":  
         ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
         },
@@ -183,6 +186,7 @@ const grammar: Grammar = {
     {"name": "term", "symbols": [(lexer.has("unit") ? {type: "unit"} : unit)], "postprocess": () => Fun('Unit')},
     {"name": "term", "symbols": ["paren"], "postprocess": id},
     {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
+    {"name": "var", "symbols": [{"literal":"_"}], "postprocess": () => ({ type: 'var', name: `any_${underscoresCount++}` })},
     {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},
     {"name": "rule", "symbols": ["expr", {"literal":"="}, "expr", {"literal":";"}], "postprocess": ([lhs, _eq, rhs]) => ({ type: 'rule', lhs, rhs })},
     {"name": "rules", "symbols": ["non_empty_rules"], "postprocess": id},

@@ -1,0 +1,13 @@
+LatticePaths 0 h m = (1, m)
+LatticePaths w 0 m = (1, m)
+LatticePaths w h m = LatticePaths' w h m (FindMemo (w, h) m)
+LatticePaths' w h m (Some v) = (v, m)
+LatticePaths' w h m None =
+    let (a, m2) = LatticePaths (w - 1) h m in
+    let (b, m3) = LatticePaths w (h - 1) m2 in
+    (a + b, ((w, h), a + b):m3)
+
+# use a simple list to store previous results
+FindMemo key memo = MapOption Snd (Find (\(k, v) -> k == key) memo)
+
+Main = Fst (LatticePaths 20 20 [])

@@ -1,0 +1,15 @@
+BigIntOf n = BigInt (Digits n)
+
+BigIntDigits (BigInt ds) = ds
+
+FromBigInt (BigInt ds) = FromDigits ds
+
+BigAdd (BigInt as) (BigInt bs) = BigInt (BigAdd' (Rev as) (Rev bs) 0 [])
+BigAdd' as [] 0 acc = Prepend (Rev as) acc
+BigAdd' as [] carry acc = BigAdd' as [carry] 0 acc
+BigAdd' [] bs 0 acc = Prepend (Rev bs) acc
+BigAdd' [] bs carry acc = BigAdd' [carry] bs 0 acc
+BigAdd' a:as b:bs carry acc =
+    let sum = a + b + carry in
+    let carry2 = if sum >= 10 then 1 else 0 in
+    BigAdd' as bs carry2 ((sum % 10):acc)

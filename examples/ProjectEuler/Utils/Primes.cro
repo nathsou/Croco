@@ -1,0 +1,54 @@
+import ./Iters.cro
+
+IsPrime 0 = False
+IsPrime 1 = False
+IsPrime 2 = True
+IsPrime n = if n % 2 == 0 then False else IsPrime' n 3 MaybePrime
+
+# Tail recursive trick
+IsPrime' n i MaybePrime = IsPrime' n (i + 2) (
+    if (i * i) > n then
+        True
+    else if n `Divisible` i then
+        False
+    else MaybePrime
+)
+
+IsPrime' _ _ ans = ans
+
+Primes = FilterIt IsPrime Nats
+
+Factorize 0 = []
+Factorize 1 = []
+Factorize 2 = [2]
+Factorize n = if Even n then 2 : (Factorize (n / 2)) else Factorize' n 3
+Factorize' n i =
+    if i * i <= n then
+        if n `Divisible` i then
+            i : (Factorize (n / i))
+        else Factorize' n (i + 2)
+    else [n]
+
+DivisorsCount n = Prod (Map (\(_, e) -> e + 1) (RunLength (Factorize n)))
+
+RunLength lst = RunLength' lst []
+RunLength' [] enc = enc
+RunLength' h:tl [] = RunLength' tl [(h, 1)]
+RunLength' h:tl ((n, e):enc) =
+    RunLength' tl (if h == n then ((n, e + 1):enc) else ((h, 1):(n, e):enc))
+
+Divisors 0 = [1]
+Divisors 1 = [1]
+Divisors n = Divisors' n 2 [1]
+Divisors' n i acc =
+    if i * i >= n then
+        MirrorDivisors n i acc
+    else
+        Divisors' n (i + 1) (if n `Divisible` i then i:acc else acc)
+
+MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (n /) divs)
+MirrorDivisors' n i leftDivs rightDivs =
+    if i * i == n then
+        leftDivs `Prepend` (i : rightDivs)
+    else
+        leftDivs `Prepend` rightDivs

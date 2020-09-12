@@ -1,0 +1,8 @@
+import ./Utils/Iters.cro
+
+SumSquareDiff n =
+    let a = Sum (TakeIt (n + 1) (MapIt (\n -> n * n) Nats)) in
+    let b = Sum (TakeIt (n + 1) Nats) in
+    (b * b) - a
+
+Main = SumSquareDiff 100

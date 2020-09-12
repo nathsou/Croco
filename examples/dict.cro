@@ -1,13 +1,18 @@
-Size E = 0
+# from http://groups.csail.mit.edu/mac/users/adams/BB/
+
+Size EmptyDict = 0
 Size (T v count l r) = count
 
 N v l r = T v (1 + (Size l) + (Size r)) l r
 
-Lookup x E = None
-Lookup x (T [key, val] count l r) = if x < key then Lookup x l else if x > key then Lookup x r else Some val
-
-IsSome None = False
-IsSome (Some x) = True
+Lookup x EmptyDict = None
+Lookup x (T (key, val) count l r) =
+    if x < key then
+        Lookup x l
+    else if x > key then
+        Lookup x r
+    else
+        Some val
 
 Has x dict = IsSome (Lookup x dict)
 
@@ -18,28 +23,39 @@ RotateDoubleLeft a x (T c count (T b count2 y1 y2) z) = N b (N a x y1) (N c y2 z
 RotateDoubleRight c (T a count1 x (T b count2 y1 y2)) z = N b (N a x y1) (N c y2 z)
 
 T' v l r = T'' (Size l) (Size r) v l r
-T'' ln rn v l r = if (ln + rn) < 2 then N v l r else if rn > (2 * ln) then TR r v l r else if ln > (2 * rn) then TL l v l r else N v l r
+T'' ln rn v l r = 
+    if (ln + rn) < 2 then
+        N v l r
+    else if rn > (2 * ln) then
+        TR r v l r
+    else if ln > (2 * rn) then
+        TL l v l r
+    else N v l r
 
-TR (T x count rl rr) v l r = if Size rl < Size rr then RotateSingleLeft v l r else RotateDoubleLeft v l r
-TL (T x count ll lr) v l r = if Size lr < Size ll then RotateSingleRight v l r else RotateDoubleRight v l r
+TR (T x count rl rr) v l r =
+    if Size rl < Size rr then
+        RotateSingleLeft v l r
+    else
+        RotateDoubleLeft v l r
 
-Lss [k1, v1] [k2, vs] = k1 < k2 
+TL (T x count ll lr) v l r = 
+    if Size lr < Size ll then
+        RotateSingleRight v l r
+    else
+        RotateDoubleRight v l r
+
+Lss (k1, v1) (k2, vs) = k1 < k2 
 Lss a b = a < b
 
-Ins E x = T x 1 E E
-Ins (T v count l r) x = if Lss x v then T' v (Ins l x) r else if Lss v x then T' v l (Ins r x) else T v count l r
+Insert EmptyDict x = T x 1 EmptyDict EmptyDict
+Insert (T v count l r) x =
+    if Lss x v then
+        T' v (Insert l x) r
+    else if Lss v x then
+        T' v l (Insert r x)
+    else
+        T v count l r
 
-ArrayOf lst = ArrayOf' lst E 0
+ArrayOf lst = ArrayOf' lst EmptyDict 0
 ArrayOf' [] dict i = dict
-ArrayOf' (h:tl) dict i = ArrayOf' tl (Ins dict [i, h]) (i + 1)
-
-Range from to = Range' from to [] (from == to)
-Range' from to rng True = rng
-Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
-
-Q = ArrayOf (Range 123 200)
-
-Unwrap None = UnwrapError
-Unwrap (Some x) = x
-
-Main = Unwrap (Lookup 57 Q)
+ArrayOf' (h:tl) dict i = ArrayOf' tl (Insert dict (i, h)) (i + 1)

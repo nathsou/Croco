@@ -1,0 +1,13 @@
+TimesN n as = TimesN' (Rev as) n [] 0
+TimesN' [] n acc carry = if carry > 0 then carry:acc else acc
+TimesN' a:as n acc carry =
+    let p = a * n + carry in
+    TimesN' as n ((p % 10):acc) (if p > 9 then 1 else 0)
+
+Double = TimesN 2
+
+BigPow2 b = BigPow2' b [1]
+BigPow2' 0 acc = acc
+BigPow2' n acc = BigPow2' (n - 1) (Double acc)
+
+Main = Sum (BigPow2 1000)

@@ -1,4 +1,4 @@
-import { check, checkArity, checkNoDuplicates, checkNoFreeVars, compile as grfCompile, ExternalsFactory, isOk, leftLinearize, mapify, normalizeLhsArgs, simulateIfs, TRS, unwrap } from 'girafe';
+import { check, checkArity, checkNoDuplicates, checkNoFreeVars, compile as grfCompile, ExternalsFactory, isOk, leftLinearize, mapify, normalizeLhsArgs, normalizeRhs, simulateIfs, TRS, uniqueVarNames, unwrap } from 'girafe';
 import { grfRuleOf, Prog } from "../Parser/Expr";
 import { checkMain } from './Passes/CheckMain';
 import { removeLambdas } from './Passes/Lambdas';
@@ -16,7 +16,9 @@ export const compile = (rules: Prog, externals: ExternalsFactory<string>): TRS =
         ),
         leftLinearize,
         simulateIfs,
-        normalizeLhsArgs(externals('native'))
+        uniqueVarNames,
+        normalizeLhsArgs(externals('native')),
+        normalizeRhs(0, false)
     );
 
     if (isOk(res)) {

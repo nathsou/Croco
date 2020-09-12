@@ -1,0 +1,8 @@
+# Rules available to all croco programs
+
+import ./Fun.cro
+import ./List.cro
+import ./Bool.cro
+import ./String.cro
+import ./Math.cro
+import ./Option.cro

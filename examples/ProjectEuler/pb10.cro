@@ -1,0 +1,3 @@
+import ./Utils/Primes.cro
+
+Main = SumIt (IterWhile (< 2000000) Primes)

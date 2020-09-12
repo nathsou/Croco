@@ -1,0 +1,113 @@
+Len (String chars) = Len chars
+Len = Fold (\_ acc -> acc + 1) 0
+
+Fold f base (String cs) = String (Fold f base cs)
+Fold f base lst = Fold' f lst base
+Fold' f [] acc = acc
+Fold' f h:tl acc = Fold' f tl (f h acc)
+
+MapRev f = Fold (\h acc -> (f h):acc) []
+Map f lst = Rev (MapRev f lst)
+
+FilterRev pred = Fold (\h acc -> if pred h then h:acc else acc) []
+Filter pred lst = Rev (FilterRev pred lst)
+
+Rev = Fold (\h acc -> h:acc) []
+
+Range from to = Range' from to [] (from == to)
+Range' from to rng True = rng
+Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
+
+IsNil [] = True
+IsNil _:_ = False
+
+IsList [] = True
+IsList h:tl = True
+IsList x = False
+
+Take n lst = Fst (SplitAt n lst)
+
+Drop 0 lst = lst
+Drop _ [] = []
+Drop n h:tl = Drop (n - 1) tl
+
+Slice start len lst = Take len (Drop start lst)
+
+Nth 0 [] = None
+Nth 0 h:_ = Some h
+Nth n _:tl = Nth (n - 1) tl
+
+Prepend [] bs = bs
+Prepend as bs = Prepend' (Rev as) bs
+Prepend' [] bs = bs
+Prepend' a:as bs = Prepend' as (a:bs)
+
+Append as bs = Prepend bs as
+
+Zip as bs = Zip' as bs []
+Zip' [] bs acc = Rev acc
+Zip' as [] acc = Rev acc
+Zip' a:as b:bs acc = Zip' as bs (a, b):acc
+
+Partition pred lst = Partition' pred lst ([], [])
+Partition' pred [] (as, bs) = (Rev as, Rev bs)
+Partition' pred h:tl (as, bs) = Partition' pred tl (if pred h then (h:as, bs) else (as, h:bs))
+
+SortWith cmp [] = []
+SortWith cmp h:tl =
+    let (smaller, bigger) = Partition (\n -> cmp n h) tl in
+    (SortWith cmp smaller) `Prepend` (h:(SortWith cmp bigger))
+
+Sort = SortWith (<)
+SortRev = SortWith (>)
+
+All _ [] = True
+All pred h:tl = if pred h then All pred tl else False
+
+Any _ [] = True
+Any pred h:tl = if pred h then True else Any pred tl
+
+Fst (a, _) = a
+Snd (_, b) = b
+
+Fst (a, _, _) = a
+Snd (_, b, _) = b
+Trd (_, _, c) = c
+
+Head h:_ = h
+Tail _:tl = tl
+
+Max h:tl = Max' tl h
+Max' [] m = m
+Max' h:tl m = Max' tl (if h > m then h else m)
+
+Min h:tl = Mix' tl h
+Min' [] m = m
+Min' h:tl m = Mix' tl (if h < m then h else m)
+
+Scan f base lst = Scan' f lst base []
+Scan' _ [] acc scan = Rev (acc:scan)
+Scan' f h:tl acc scan = Scan' f tl (f h acc) (acc:scan)
+
+ScanRev f base lst = ScanRev' f lst base []
+ScanRev' _ [] acc scan = acc:scan
+ScanRev' f h:tl acc scan = ScanRev' f tl (f h acc) (acc:scan)
+
+Find pred lst = Find' pred lst None
+Find' _ _ (Some x) = Some x
+Find' _ [] _ = None
+Find' pred h:tl None = Find' pred tl (if pred h then Some h else None)
+
+SplitAt len lst = SplitAt' len lst []
+SplitAt' 0 lst acc = (Rev acc, lst)
+SplitAt' _ [] acc = (Rev acc, [])
+SplitAt' n h:tl acc = SplitAt' (n - 1) tl (h:acc)
+
+# Splits the list in groups of length `len`
+ChunksRev len lst = ChunksRev' len lst []
+ChunksRev' _ [] chunks = chunks
+ChunksRev' len lst chunks =
+    let (chunk, tl) = SplitAt len lst in
+    ChunksRev' len tl (chunk:chunks)
+    
+Chunks len lst = Rev (ChunksRev len lst)

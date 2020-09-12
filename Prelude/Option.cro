@@ -1,0 +1,11 @@
+
+MapOption _ None = None
+MapOption f (Some x) = Some (f x)
+
+Unwrap (Some x) = x
+
+IsNone None = True
+IsNone _ = False
+
+IsSome (Some _) = True
+IsSome _ = False

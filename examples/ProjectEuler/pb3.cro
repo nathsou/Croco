@@ -1,0 +1,3 @@
+import ./Utils/Primes.cro
+
+Main = Max (Factorize 600851475143)

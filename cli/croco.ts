@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import { arithmeticExternals, head, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, rhs, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { postprocessTerm } from "../src/Parser/Expr";
@@ -17,11 +17,9 @@ if (src === undefined) {
 
 const targets = [...supportedTargets, 'girafe'];
 
-const source = readFileSync(src).toString('utf-8');
-
 const externals = mergeExternals(arithmeticExternals, metaExternals());
 
-const trs = compile(parse(source), externals);
+const trs = compile(parse(src), externals);
 
 const transpile = (trs: TRS, target: Targets | 'girafe') => {
     if (target === 'girafe') {

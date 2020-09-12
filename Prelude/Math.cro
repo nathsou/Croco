@@ -1,0 +1,39 @@
+Sum = Fold (+) 0
+
+Prod = Fold (*) 1
+
+Divisible a b = (a % b) == 0
+
+Even n = n `Divisible` 2
+Odd n = n % 2 == 1
+
+Gtr a b = if a > b then a else b
+Sml a b = if a < b then a else b
+
+# FIXME: the javascript translator's externals should only do integer arithmetic
+IntDiv a b = let d = a / b in d - (d % 1)
+
+# Gives the list of digits of n
+Digits n = Digits' n []
+Digits' 0 ds = 0:ds
+Digits' 1 ds = 1:ds
+Digits' 2 ds = 2:ds
+Digits' 3 ds = 3:ds
+Digits' 4 ds = 4:ds
+Digits' 5 ds = 5:ds
+Digits' 6 ds = 6:ds
+Digits' 7 ds = 7:ds
+Digits' 8 ds = 8:ds
+Digits' 9 ds = 9:ds
+Digits' n ds = Digits' (n `IntDiv` 10) ((n % 10) : ds)
+
+FromDigits ds = FromDigits' (Rev ds) 0 1
+FromDigits' [] sum _ = sum
+FromDigits' d:ds sum p = FromDigits' ds (sum + d * p) (p * 10)
+
+Pow a 0 = 1
+Pow a n =
+    if Even n then
+        Pow (a * a) (n / 2)
+    else
+        a * (Pow (a * a) ((n - 1) / 2))

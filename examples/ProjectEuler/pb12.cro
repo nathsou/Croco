@@ -1,0 +1,6 @@
+import ./Utils/Iters.cro
+import ./Utils/Primes.cro
+
+Triangles = ScanIt (+) 0 (NatsFrom 1)
+
+Main = Unwrap (FindIt (\n -> DivisorsCount n > 500) Triangles)

@@ -1,4 +1,4 @@
-import { Maybe, Symb, specialCharsSet, isNothing, snd, Lexer } from "girafe";
+import { Maybe, Symb, specialCharsSet, isNothing, snd, Lexer, fst } from "girafe";
 
 export const putSemiColons = (source: string): string => {
     const lines = source.split('\n').filter(line => line.trim() !== '' && line.trimLeft()[0] !== '#');
@@ -49,6 +49,7 @@ const lexSymb = (input: string): Maybe<[Symb, string]> => {
 };
 
 const isRuleDefStart = (input: string): boolean => {
+    if (input.trimLeft().startsWith('import')) return true;
     const s = lexSymb(input);
     if (isNothing(s)) return false;
     return snd(s).includes('=');

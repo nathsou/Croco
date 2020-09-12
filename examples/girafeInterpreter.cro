@@ -1,67 +1,8 @@
-Drop n [] = []
-Drop 0 lst = lst
-Drop n h:tl = Drop (n - 1) tl
-Drop n (String chars) = String (Drop n chars)
-
-Take n [] = []
-Take 0 lst = []
-Take n h:tl = h : (Take (n - 1) tl)
-Take n (String chars) = String (Take n chars)
-
-Slice start len lst = Take len (Drop start lst)
-Slice start len (String chars) = String (Slice start len chars)
-
-Chars (String str) = str
-
-Map f [] = []
-Map f h:tl = (f h) : (Map f tl)
-Map f (String chars) = String (Map f chars)
-
-Str f (String chars) = String (f chars)
-
-And True True = True
-And True False = False
-And False True = False
-And False False = False
-
-ToUpper (String chars) = String (Map (\c -> if (c >= 97) `And` (c <= 122) then c - 32 else c) chars)
-
-IsList [] = True
-IsList h:tl = True
-IsList x = False
-
 IsFun (Fun (String chars) args) = IsList args
 IsFun x = False
 
 IsVar (Var (String x)) = True
 IsVar x = False
-
-Len [] = 0
-Len h:tl = (Len tl) + 1
-
-Rev lst = Rev' lst []
-Rev' [] acc = acc
-Rev' h:tl acc = Rev' tl (h:acc)
-
-Prepend as [] = as
-Prepend [] bs = bs
-Prepend a:as bs = a : (as `Prepend` bs)
-
-Join lst = String (Join' (Rev lst) [])
-Join' [] acc = acc
-Join' (String h):tl acc = Join' tl (Prepend h acc)
-
-JoinWith (String del) lst = String (JoinWith' del lst [])
-JoinWith' del [] acc = acc
-JoinWith' del [String h] acc = h `Prepend` acc
-JoinWith' del (String h):tl acc = JoinWith' del tl ((h `Append` del) `Prepend` acc)
-
-Append as bs = Prepend bs as
-
-Zip as bs = Zip' as bs []
-Zip' [] bs acc = Rev acc
-Zip' as [] acc = Rev acc
-Zip' a:as b:bs acc = Zip' as bs (a, b):acc
 
 # Martelli and Montanari's term unification algorithm
 Unify s t = Unify' [(s, t)] []
@@ -78,31 +19,32 @@ Unify' ts subst = None
 Peano 0 = Fun "0" []
 Peano n = Fun "S" [Peano n - 1] 
 
-ParseTRS rules =
-    let p = ParseTermDefined in
-    Map (\(a, b) -> (p a, p b)) rules
-
 Show t = String (Show' t)
 Show' (Var (String x)) = x
 Show' (Fun (String f) []) = f
 Show' (Fun (String f) args) = 
     Prepend (Prepend f (Prepend (Chars "(") ((Chars (JoinWith ", " (Map Show (Rev args))))))) (Chars ")")
 
-FindRule term [] = None
-FindRule t (lhs, rhs):rules = FindRule' t (Unify lhs t) (lhs, rhs) rules
-FindRule' t (Some subst) r rules = Some (r, subst)
-FindRule' t a b rules = FindRule t rules
+FindRule name term [] = None
+FindRule name t (name, rs):rules = FindRule' t rs
+FindRule name t (f, rs):rules = FindRule name t rules
+
+FindRule' _ [] = None
+FindRule' t (lhs, rhs):rs = FindRule'' t (Unify lhs t) (lhs, rhs) rs
+
+FindRule'' _ (Some subst) r rules = Some (r, subst)
+FindRule'' t subst _ rules = FindRule' t rules
 
 FindSubst x [] = Var x 
-FindSubst x (x, z):tl = z
-FindSubst x (y, z):tl = FindSubst x tl
+FindSubst x (x, z):_ = z
+FindSubst x (_, _):tl = FindSubst x tl
 
 Substitute (Var x) subst = FindSubst x subst
 Substitute (Fun f args) subst = Fun f (Map (\t -> Substitute t subst) args)
 
 Reduce (Fun f args) rules =
     let s = Fun f (Map (\t -> Normalize t rules) args) in
-    Reduce' s (FindRule s rules)
+    Reduce' s (FindRule f s rules)
 Reduce (Var x) rules = (Var x, False)
 Reduce' t None = (t, False)
 Reduce' t (Some ((lhs, rhs), subst)) = (Substitute rhs subst, True)
@@ -111,13 +53,7 @@ Normalize term rules = Normalize' (term, True) rules
 Normalize' (t, True) rules = Normalize' (Reduce t rules) rules
 Normalize' (t, False) rules = t
 
-CharCode (String [c]) = c
-
-IsDigit (String [c]) = IsDigit c
-IsDigit c = (c >= CharCode "0") `And` (c <= CharCode "9")
-
 Success res out = Some (res, String out)
-
 Fail cs = None
 
 Satisfy test [] = Fail []
@@ -154,8 +90,6 @@ ParseSymb = MapParser (\(h, tl) -> Join [h, tl]) (((ParseUpperCase `Alt` ParseDi
 
 ParseTerm = ParseFun `Alt` ParseVar
 
-Fst (a, b) = a
-
 ParseArgs = ParseArgs2 `Alt` (MapParser (\t -> [t]) ParseTerm)
 ParseArgs2 =
     MapParser
@@ -168,13 +102,12 @@ ParseFun = ParseFun2 `Alt` ParseFun1
 ParseFun1 = MapParser (\f -> Fun f []) ParseSymb
 ParseFun2 =
     MapParser (\((f, args), p) -> Fun f args)
-    (
-        (\() ->
-        MapParser Fst 
-        (ParseSymb `Then` (ParseChar "("))) `LazyThen` (\() -> ParseArgs)) `Then` (ParseChar ")"
-    )
+    (((\_ -> MapParser Fst (ParseSymb `Then` (ParseChar "("))))
+        `LazyThen`
+        (\_ -> ParseArgs))
+        `Then` (ParseChar ")")
 
-ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) ((ParseLowerCase `Then` ParseAlphaNums))
+ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) (ParseLowerCase `Then` ParseAlphaNums)
 
 MapParser f p cs = MapParser' f (p cs)
 MapParser' f None = None
@@ -185,12 +118,29 @@ RemoveSpaces' [] acc = String (Rev acc)
 WhiteSpace = CharCode " "
 RemoveSpaces' c:cs acc = RemoveSpaces' cs (if c == WhiteSpace then acc else c:acc) 
 
-Unwrap (Some x) = x
+# Inserts a rule in a list of (head, rules with head) pairs
+InsertHead head rule rules = InsertHead' head rule rules [] 
+InsertHead' head rule [] acc = (head, [rule]):acc
+InsertHead' head rule (f, rs):tl acc = 
+    if f == head then
+        Prepend acc ((head, rule:rs):tl)
+    else
+        InsertHead' head rule tl ((f, rs):acc)
 
-Map f None = None
-Map f (Some x) = Some (f x)
+RuleName (Fun name _, _) = name
 
-ParseTermDefined t = Unwrap (Map Fst (ParseTerm (Chars (RemoveSpaces t))))
+# Groups rules corresponding to a given head together
+Headify rules = Headify' rules []
+Headify' [] acc = acc
+Headify' r:rs acc = Headify' rs (InsertHead (RuleName r) r acc)
+
+ParseTermDefined t = Unwrap (MapOption Fst (ParseTerm (Chars (RemoveSpaces t))))
+
+ParseTRS rules =
+    let p = ParseTermDefined in
+    let trs = Headify (Map (\(a, b) -> (p a, p b)) rules) in
+    let trs2 = Map (\(f, rules) -> (f, Rev rules)) trs in 
+    SortWith (\(f1, rs1) (f2, rs2) -> Len rs1 > Len rs2) trs2
 
 PeanoTRS = ParseTRS [
         ("Add(a, 0)", "a"),
@@ -214,12 +164,16 @@ PeanoTRS = ParseTRS [
         ("P(0)", "0"),
         ("P(S(n))", "n"),
         ("Range(n)", "Range2(n, Nil)"),
-        ("Range2(0, acc)", "Cons(0, acc)"),
-        ("Range2(n, acc)", "Range2(P(n), Cons(n, acc))"),
+        ("Range2(0, acc)", "acc"),
+        ("Range2(S(n), acc)", "Range2(n, Cons(n, acc))"),
         ("Len(Nil)", "0"),
         ("Len(Cons(h, tl))", "S(Len(tl))")
     ]
 
 Norm (String term) trs = Normalize (ParseTermDefined (String term)) trs
 
-Main = Show (Norm "Len(Range(Mult(3, 7)))" PeanoTRS)
+Q = Show (Norm "Len(Range(Add(Mult(3, 7), 1)))" PeanoTRS)
+Q2 = Show (Norm "Mult(10, 10)" PeanoTRS)
+Q3 = Show (Norm "Range(Mult(7, 3))" PeanoTRS)
+
+Main = Q3

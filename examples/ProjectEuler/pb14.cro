@@ -1,0 +1,13 @@
+import ./Utils/Iters.cro
+
+MaxBy gtr (It h tl) = MaxBy' gtr h (Iter tl)
+MaxBy gtr h:tl = MaxBy' gtr h tl
+MaxBy' gtr h tl = FoldIt (\h max -> if gtr h max then h else max) h tl
+
+# TODO: use a Dict to cache previous results
+CollatzLen n = CollatzLen' n 1
+CollatzLen' 1 len = len
+CollatzLen' n len =
+    CollatzLen' (if Even n then n / 2 else (3 * n + 1) / 2) (len + (if Even n then 1 else 2))
+
+Main = Fst (MaxBy (\(a, l1) (b, l2) -> l1 > l2) (MapIt (\n -> (n, CollatzLen n)) (RangeIt 500000 1000000)))

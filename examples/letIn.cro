@@ -1,1 +1,0 @@
-Main = let a = 2 in let b = 3 in let [c, d] = [5, 7] in a + b + c + d

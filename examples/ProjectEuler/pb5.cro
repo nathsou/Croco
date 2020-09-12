@@ -1,0 +1,8 @@
+import ./Utils/Primes.cro
+
+SmallestMultiple m = SmallestMultiple' m 1 2
+SmallestMultiple' m n m = n
+SmallestMultiple' m n i = 
+    SmallestMultiple' m (if Not (Divisible n i) then n * (Head (Factorize i)) else n) (i + 1)
+
+Main = SmallestMultiple 20

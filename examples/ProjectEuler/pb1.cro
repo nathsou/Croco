@@ -1,0 +1,3 @@
+import ./Utils/Iters.cro
+
+Main = Sum (TakeItWhile (< 1000) (FilterIt (\n -> (Divisible n 3) `LazyOr` (\_ -> Divisible n 5)) Nats))

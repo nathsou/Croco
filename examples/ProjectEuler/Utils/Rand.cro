@@ -1,0 +1,13 @@
+# https://www.wikiwand.com/en/Linear_congruential_generator
+
+PRNGA = 48271
+PRNGC = 0
+PRNGM = 2147483647
+
+NextRand seed = (PRNGA * seed + PRNGC) % PRNGM
+
+Rands n seed = Rands' n (NextRand seed) []
+Rands' 0 _ acc = acc
+Rands' n seed acc = Rands' (n - 1) (NextRand seed) (seed:acc)
+
+# Rands n seed = Fold (\prev acc -> (NextRand prev):acc) [] (Range seed (seed + n))
