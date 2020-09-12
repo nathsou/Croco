@@ -1,7 +1,7 @@
-import { Maybe, Symb, specialCharsSet, isNothing, snd, Lexer, fst } from "girafe";
+import { isNothing, Maybe, snd, specialCharsSet, Symb } from "girafe";
 
 export const putSemiColons = (source: string): string => {
-    const lines = source.split('\n').filter(line => line.trim() !== '' && line.trimLeft()[0] !== '#');
+    const lines = source.split('\n').filter(line => line.trim() !== '' && !line.trimLeft().startsWith('--'));
 
     const newLines: string[] = [];
 

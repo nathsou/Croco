@@ -24,7 +24,7 @@ const lexer = moo.compile({
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   arrow: '->',
-  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
+  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':', '.', '++', '>>', '>>=', '&&', '||'],
   comma: ',',
   assign: '=',
   unit: '()',
@@ -35,7 +35,7 @@ const lexer = moo.compile({
   rbracket: ']',
   semicolon: ';',
   lambda: '\\',
-  comment: /#.*?$/,
+  comment: /\-\-.*?$/,
   string: /"(?:\\["\\]|[^\n"\\])*"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
@@ -72,18 +72,24 @@ const List = vals => {
 const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
 
 const opMap = {
-  '+': '@add',
-  '-': '@sub',
-  '*': '@mult',
-  '/': '@div',
-  '**': '@pow',
-  '%': '@mod',
-  '==': '@equ',
-  '<': '@lss',
-  '<=': '@leq',
-  '>': '@gtr',
-  '>=': '@geq',
-  ':': ':'
+  '+': 'Add',
+  '-': 'Subtract',
+  '*': 'Multiply',
+  '/': 'Divide',
+  '**': 'Pow',
+  '%': 'Mod',
+  '==': 'Equals',
+  '<': 'Less',
+  '<=': 'LessEq',
+  '>': 'Greater',
+  '>=': 'GreaterEq',
+  ':': 'Cons',
+  '.': 'Compose',
+  '++': 'Prepend',
+  '>>': 'MonadicThen',
+  '>>=': 'MonadicBind',
+  '&&': 'LazyAnd',
+  '||': 'LazyOr',
 };
 
 let underscoresCount = 0;
@@ -126,11 +132,17 @@ const grammar: Grammar = {
     {"name": "lambda", "symbols": ["let_in"], "postprocess": id},
     {"name": "let_in", "symbols": [{"literal":"let"}, "expr", {"literal":"="}, "expr", {"literal":"in"}, "expr"], "postprocess": d => LetIn(d[1], d[3], d[5])},
     {"name": "let_in", "symbols": ["comp"], "postprocess": id},
-    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "if"], "postprocess": ([a, _, b]) => Fun("@lss", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "if"], "postprocess": ([a, _, b]) => Fun("@leq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">"}, "if"], "postprocess": ([a, _, b]) => Fun("@gtr", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">="}, "if"], "postprocess": ([a, _, b]) => Fun("@geq", a, b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "if"], "postprocess": ([a, _, b]) => Fun("@equ", a, b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"||"}, "if"], "postprocess": ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q))},
+    {"name": "comp", "symbols": ["comp", {"literal":"&&"}, "if"], "postprocess": ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q))},
+    {"name": "comp", "symbols": ["comp", {"literal":"++"}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("Prepend"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":">>"}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":">>="}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":"."}, "if"], "postprocess": ([f, _, g]) => App(App(Fun("Compose"), f), g)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Less"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("LessEq"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">"}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Greater"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("GreaterEq"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Equals"), a), b)},
     {"name": "comp", "symbols": ["if"], "postprocess": id},
     {"name": "if", "symbols": [{"literal":"if"}, "expr", {"literal":"then"}, "expr", {"literal":"else"}, "expr"], "postprocess":  
         ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
@@ -150,31 +162,21 @@ const grammar: Grammar = {
     {"name": "tuple", "symbols": ["custom_op"], "postprocess": id},
     {"name": "custom_op", "symbols": ["custom_op", (lexer.has("backtick") ? {type: "backtick"} : backtick), (lexer.has("symb") ? {type: "symb"} : symb), (lexer.has("backtick") ? {type: "backtick"} : backtick), "expr"], "postprocess": d => App(App(Fun(d[2].value), d[0]), d[4])},
     {"name": "custom_op", "symbols": ["addsub"], "postprocess": id},
-    {"name": "addsub", "symbols": ["addsub", {"literal":"+"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@add", a, b)},
-    {"name": "addsub", "symbols": ["addsub", {"literal":"-"}, "multdiv"], "postprocess": ([a, _, b]) => Fun("@sub", a, b)},
+    {"name": "addsub", "symbols": ["addsub", {"literal":"+"}, "multdiv"], "postprocess": ([a, _, b]) => App(App(Fun("Add"), a), b)},
+    {"name": "addsub", "symbols": ["addsub", {"literal":"-"}, "multdiv"], "postprocess": ([a, _, b]) => App(App(Fun("Subtract"), a), b)},
     {"name": "addsub", "symbols": ["multdiv"], "postprocess": id},
-    {"name": "multdiv", "symbols": ["multdiv", {"literal":"*"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mult", a, b)},
-    {"name": "multdiv", "symbols": ["multdiv", {"literal":"/"}, "pow"], "postprocess": ([a, _, b]) => Fun("@div", a, b)},
-    {"name": "multdiv", "symbols": ["multdiv", {"literal":"%"}, "pow"], "postprocess": ([a, _, b]) => Fun("@mod", a, b)},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"*"}, "pow"], "postprocess": ([a, _, b]) => App(App(Fun("Multiply"), a), b)},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"/"}, "pow"], "postprocess": ([a, _, b]) => App(App(Fun("Divide"), a), b)},
+    {"name": "multdiv", "symbols": ["multdiv", {"literal":"%"}, "pow"], "postprocess": ([a, _, b]) => App(App(Fun("Mod"), a), b)},
     {"name": "multdiv", "symbols": ["pow"], "postprocess": id},
-    {"name": "pow", "symbols": ["pow", {"literal":"**"}, "comp"], "postprocess": ([a, _, b]) => Fun("**", a, b)},
+    {"name": "pow", "symbols": ["pow", {"literal":"**"}, "comp"], "postprocess": ([a, _, b]) => App(App(Fun("Pow"), a), b)},
     {"name": "pow", "symbols": ["op_fun"], "postprocess": id},
-    {"name": "op_fun", "symbols": [{"literal":"("}, (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": 
-        d => Lambda(
-          [Var('__a'), Var('__b')],
-          Fun(opMap[d[1].value], Var('__a'), Var('__b'))
-        )
-        },
-    {"name": "op_fun", "symbols": [{"literal":"("}, "expr", (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": 
-        d => Lambda(
-          [Var('__b')],
-          Fun(opMap[d[2].value], d[1], Var('__b'))
-        )
-        },
+    {"name": "op_fun", "symbols": [{"literal":"("}, (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": d => Fun(opMap[d[1].value])},
+    {"name": "op_fun", "symbols": [{"literal":"("}, "expr", (lexer.has("binop") ? {type: "binop"} : binop), {"literal":")"}], "postprocess": d => App(Fun(opMap[d[2].value]), d[1])},
     {"name": "op_fun", "symbols": [{"literal":"("}, (lexer.has("binop") ? {type: "binop"} : binop), "expr", {"literal":")"}], "postprocess": 
         d => Lambda(
           [Var('__a')],
-          Fun(opMap[d[1].value], Var('__a'), d[2])
+          App(App(Fun(opMap[d[1].value]), Var('__a')), d[2])
         )
         },
     {"name": "op_fun", "symbols": ["str"], "postprocess": id},

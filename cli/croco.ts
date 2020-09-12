@@ -45,11 +45,13 @@ if (out) {
         }
     }
 } else {
-    // const norm = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
-    // console.log(postprocessTerm(norm(fun('Main'))));
+    if (trs.has('Main')) {
+        const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
+        normalize(rhs(head(trs.get('Main')))).then(out => {
+            console.log(postprocessTerm(out));
+        });
 
-    const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
-    normalize(rhs(head(trs.get('Main')))).then(out => {
-        console.log(postprocessTerm(out));
-    });
+        // const norm = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
+        // console.log(postprocessTerm(norm(fun('Main'))));
+    }
 }

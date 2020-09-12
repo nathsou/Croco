@@ -7,13 +7,14 @@ Divisible a b = (a % b) == 0
 Even n = n `Divisible` 2
 Odd n = n % 2 == 1
 
-Gtr a b = if a > b then a else b
-Sml a b = if a < b then a else b
+-- should not overlap with the list rules
+Max a b = if a > b then a else b
+Min a b = if a < b then a else b
 
-# FIXME: the javascript translator's externals should only do integer arithmetic
+-- FIXME: the javascript translator's externals should only do integer arithmetic
 IntDiv a b = let d = a / b in d - (d % 1)
 
-# Gives the list of digits of n
+-- Gives the list of digits of n
 Digits n = Digits' n []
 Digits' 0 ds = 0:ds
 Digits' 1 ds = 1:ds

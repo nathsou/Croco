@@ -4,7 +4,7 @@ PalindromeList lst = lst == (Rev lst)
 LargestPalindrome a max =
     if a >= 100 then
         let m = LargestPalindrome' a 999 max in
-        LargestPalindrome (a - 1) (Gtr m max)
+        LargestPalindrome (a - 1) (Max m max)
     else max
     
 LargestPalindrome' a b m =
@@ -12,6 +12,6 @@ LargestPalindrome' a b m =
         m
     else
         let p = a * b in
-        LargestPalindrome' a (b - 1) (if ((p > m) `LazyAnd` (\_ -> Palindrome p)) then p else m)
+        LargestPalindrome' a (b - 1) (if ((p > m) && (Palindrome p)) then p else m)
 
 Main = LargestPalindrome 999 0

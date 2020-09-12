@@ -1,4 +1,4 @@
-# Set of rules on iterators
+-- Set of rules on iterators
 
 TakeIt 0 it = []
 TakeIt n EmptyIt = []

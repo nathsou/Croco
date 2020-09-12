@@ -1,6 +1,6 @@
 import ./Utils/Iters.cro
 
-# Fibonacci sequence iterator
+-- Fibonacci sequence iterator
 Fibs = Fibs' 1 2
 Fibs' a b = It a (NextFib b (a + b))
 Iter (NextFib a b) = Fibs' a b

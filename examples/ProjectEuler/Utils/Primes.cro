@@ -5,7 +5,7 @@ IsPrime 1 = False
 IsPrime 2 = True
 IsPrime n = if n % 2 == 0 then False else IsPrime' n 3 MaybePrime
 
-# Tail recursive trick
+-- Tail recursive trick
 IsPrime' n i MaybePrime = IsPrime' n (i + 2) (
     if (i * i) > n then
         True
@@ -44,7 +44,7 @@ Divisors' n i acc =
     if i * i >= n then
         MirrorDivisors n i acc
     else
-        Divisors' n (i + 1) (if n `Divisible` i then i:acc else acc)
+        Divisors' n (i + 1) (if n `Divisible` i then (i:acc) else acc)
 
 MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (n /) divs)
 MirrorDivisors' n i leftDivs rightDivs =

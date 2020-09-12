@@ -1,4 +1,4 @@
-# Rules available to all croco programs
+-- Rules available to all croco programs
 
 import ./Fun.cro
 import ./List.cro

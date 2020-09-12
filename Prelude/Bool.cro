@@ -1,18 +1,22 @@
 Not True = False
 Not False = True
 
+-- Eager version of &&
 And False False = False
 And False True = False
 And True False = False
 And True True = True
 
+-- Eager version of ||
 Or False False = False
 Or False True = True
 Or True False = True
 Or True True = True
 
+-- Only evaluates its second argument if necessary
 LazyAnd True b = b ()
 LazyAnd False b = False
 
+-- Only evaluates its second argument if necessary
 LazyOr True b = True
 LazyOr False b = b ()

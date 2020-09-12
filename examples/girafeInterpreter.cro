@@ -1,10 +1,10 @@
 IsFun (Fun (String chars) args) = IsList args
 IsFun x = False
 
-IsVar (Var (String x)) = True
+IsVar (Var (String _)) = True
 IsVar x = False
 
-# Martelli and Montanari's term unification algorithm
+-- Martelli and Montanari's term unification algorithm
 Unify s t = Unify' [(s, t)] []
 Unify' [] subst = Some subst
 Unify' (Var a, Var a):ts subst = Unify' ts subst
@@ -73,8 +73,8 @@ Alt fst snd cs = Alt' (fst cs) snd cs
 Alt' None snd cs = snd cs
 Alt' (Some res) snd cs = Some res
 
-ParseLowerCase = Satisfy (\c -> (c >= CharCode "a") `And` (c <= CharCode "z"))
-ParseUpperCase = Satisfy (\c -> (c >= CharCode "A") `And` (c <= CharCode "Z"))
+ParseLowerCase = Satisfy (\c -> (c >= CharCode "a") && (c <= CharCode "z"))
+ParseUpperCase = Satisfy (\c -> (c >= CharCode "A") && (c <= CharCode "Z"))
 
 ParseLetter = ParseLowerCase `Alt` ParseUpperCase
 ParseLetters = MapParser Join (Many ParseLetter)
@@ -118,7 +118,7 @@ RemoveSpaces' [] acc = String (Rev acc)
 WhiteSpace = CharCode " "
 RemoveSpaces' c:cs acc = RemoveSpaces' cs (if c == WhiteSpace then acc else c:acc) 
 
-# Inserts a rule in a list of (head, rules with head) pairs
+-- Inserts a rule in a list of (head, rules with head) pairs
 InsertHead head rule rules = InsertHead' head rule rules [] 
 InsertHead' head rule [] acc = (head, [rule]):acc
 InsertHead' head rule (f, rs):tl acc = 
@@ -129,7 +129,7 @@ InsertHead' head rule (f, rs):tl acc =
 
 RuleName (Fun name _, _) = name
 
-# Groups rules corresponding to a given head together
+-- Groups rules corresponding to a given head together
 Headify rules = Headify' rules []
 Headify' [] acc = acc
 Headify' r:rs acc = Headify' rs (InsertHead (RuleName r) r acc)

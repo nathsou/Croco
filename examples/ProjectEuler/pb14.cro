@@ -4,7 +4,7 @@ MaxBy gtr (It h tl) = MaxBy' gtr h (Iter tl)
 MaxBy gtr h:tl = MaxBy' gtr h tl
 MaxBy' gtr h tl = FoldIt (\h max -> if gtr h max then h else max) h tl
 
-# TODO: use a Dict to cache previous results
+-- TODO: use a Dict to cache previous results
 CollatzLen n = CollatzLen' n 1
 CollatzLen' 1 len = len
 CollatzLen' n len =

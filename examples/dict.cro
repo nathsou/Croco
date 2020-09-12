@@ -1,4 +1,4 @@
-# from http://groups.csail.mit.edu/mac/users/adams/BB/
+-- from http://groups.csail.mit.edu/mac/users/adams/BB/
 
 Size EmptyDict = 0
 Size (T v count l r) = count

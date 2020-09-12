@@ -3,4 +3,4 @@ Id x = x
 Choice True a _ = a
 Choice False _ b = b
 
-Compose f g x = f (g x)
+Compose f g = \x -> f (g x)

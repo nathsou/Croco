@@ -138,8 +138,14 @@ export const showProg = (prog: Prog): string => {
     return prog.map(showRule).join('\n');
 };
 
+export const varOf = (name: string): Var => ({ type: 'var', name });
 export const fun = (name: string, ...args: Term[]): Fun => ({ type: 'fun', name, args });
 export const app = (lhs: Term, rhs: Term): Fun => fun('app', lhs, rhs);
+export const ruleOf = ([lhs, rhs]: [Fun, Term]): RuleDecl => ({
+    type: 'rule',
+    lhs,
+    rhs
+});
 
 export const rev = <T>(lst: readonly T[]): T[] => {
     const r: T[] = [];

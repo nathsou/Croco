@@ -37,6 +37,7 @@ Nth 0 [] = None
 Nth 0 h:_ = Some h
 Nth n _:tl = Nth (n - 1) tl
 
+Prepend (String as) (String bs) = String (Prepend as bs)
 Prepend [] bs = bs
 Prepend as bs = Prepend' (Rev as) bs
 Prepend' [] bs = bs
@@ -49,9 +50,14 @@ Zip' [] bs acc = Rev acc
 Zip' as [] acc = Rev acc
 Zip' a:as b:bs acc = Zip' as bs (a, b):acc
 
-Partition pred lst = Partition' pred lst ([], [])
-Partition' pred [] (as, bs) = (Rev as, Rev bs)
-Partition' pred h:tl (as, bs) = Partition' pred tl (if pred h then (h:as, bs) else (as, h:bs))
+PartitionRev pred lst = PartitionRev' pred lst ([], [])
+PartitionRev' pred [] (as, bs) = (as, bs)
+PartitionRev' pred h:tl (as, bs) = PartitionRev' pred tl (if pred h then (h:as, bs) else (as, h:bs))
+
+MapPair _ [] = []
+MapPair f (a, b) = (f a, f b)
+
+Partition pred lst = MapPair Rev (PartitionRev pred lst)
 
 SortWith cmp [] = []
 SortWith cmp h:tl =
@@ -72,7 +78,12 @@ Snd (_, b) = b
 
 Fst (a, _, _) = a
 Snd (_, b, _) = b
-Trd (_, _, c) = c
+Third (_, _, c) = c
+
+Fst (a, _, _, _) = a
+Snd (_, b, _, _) = b
+Third (_, _, c, _) = c
+Fourth (_, _, _, d) = d
 
 Head h:_ = h
 Tail _:tl = tl
@@ -85,9 +96,7 @@ Min h:tl = Mix' tl h
 Min' [] m = m
 Min' h:tl m = Mix' tl (if h < m then h else m)
 
-Scan f base lst = Scan' f lst base []
-Scan' _ [] acc scan = Rev (acc:scan)
-Scan' f h:tl acc scan = Scan' f tl (f h acc) (acc:scan)
+Scan f base lst = Rev (ScanRev f base lst)
 
 ScanRev f base lst = ScanRev' f lst base []
 ScanRev' _ [] acc scan = acc:scan
@@ -103,7 +112,7 @@ SplitAt' 0 lst acc = (Rev acc, lst)
 SplitAt' _ [] acc = (Rev acc, [])
 SplitAt' n h:tl acc = SplitAt' (n - 1) tl (h:acc)
 
-# Splits the list in groups of length `len`
+-- Splits the list in groups of length `len`
 ChunksRev len lst = ChunksRev' len lst []
 ChunksRev' _ [] chunks = chunks
 ChunksRev' len lst chunks =

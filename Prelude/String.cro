@@ -1,7 +1,8 @@
 Chars (String str) = str
 CharCode (String [c]) = c
 
-ToUpper = Map (\c -> if (c >= 97) `And` (c <= 122) then c - 32 else c)
+ToUpper = Map (\c -> if (c >= 97) && (c <= 122) then c - 32 else c)
+ToLower = Map (\c -> if (c >= 65) && (c <= 90) then c + 32 else c)
 
 Join lst = String (Join' (Rev lst) [])
 Join' [] acc = acc
@@ -12,7 +13,7 @@ JoinWith' del [] acc = acc
 JoinWith' del [String h] acc = h `Prepend` acc
 JoinWith' del (String h):tl acc = JoinWith' del tl ((h `Append` del) `Prepend` acc)
 
-DigitOfChar c = if (c >= 48) `And` (c <= 57) then Some (c - 48) else None
+DigitOfChar c = if (c >= 48) && (c <= 57) then Some (c - 48) else None
 
 IsDigit (String [c]) = IsDigit c
-IsDigit c = (c >= CharCode "0") `And` (c <= CharCode "9")
+IsDigit c = (c >= CharCode "0") && (c <= CharCode "9")

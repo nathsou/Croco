@@ -14,7 +14,7 @@ const lexer = moo.compile({
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   arrow: '->',
-  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':'],
+  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':', '.', '++', '>>', '>>=', '&&', '||'],
   comma: ',',
   assign: '=',
   unit: '()',
@@ -25,7 +25,7 @@ const lexer = moo.compile({
   rbracket: ']',
   semicolon: ';',
   lambda: '\\',
-  comment: /#.*?$/,
+  comment: /\-\-.*?$/,
   string: /"(?:\\["\\]|[^\n"\\])*"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
@@ -62,18 +62,24 @@ const List = vals => {
 const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
 
 const opMap = {
-  '+': '@add',
-  '-': '@sub',
-  '*': '@mult',
-  '/': '@div',
-  '**': '@pow',
-  '%': '@mod',
-  '==': '@equ',
-  '<': '@lss',
-  '<=': '@leq',
-  '>': '@gtr',
-  '>=': '@geq',
-  ':': ':'
+  '+': 'Add',
+  '-': 'Subtract',
+  '*': 'Multiply',
+  '/': 'Divide',
+  '**': 'Pow',
+  '%': 'Mod',
+  '==': 'Equals',
+  '<': 'Less',
+  '<=': 'LessEq',
+  '>': 'Greater',
+  '>=': 'GreaterEq',
+  ':': 'Cons',
+  '.': 'Compose',
+  '++': 'Prepend',
+  '>>': 'MonadicThen',
+  '>>=': 'MonadicBind',
+  '&&': 'LazyAnd',
+  '||': 'LazyOr',
 };
 
 let underscoresCount = 0;
@@ -95,11 +101,17 @@ lambda -> let_in {% id %}
 let_in -> "let" expr "=" expr "in" expr {% d => LetIn(d[1], d[3], d[5]) %}
 let_in -> comp {% id %}
 
-comp -> comp "<"  if {% ([a, _, b]) => Fun("@lss", a, b) %}
-comp -> comp "<=" if {% ([a, _, b]) => Fun("@leq", a, b) %}
-comp -> comp ">"  if {% ([a, _, b]) => Fun("@gtr", a, b) %}
-comp -> comp ">=" if {% ([a, _, b]) => Fun("@geq", a, b) %}
-comp -> comp "==" if {% ([a, _, b]) => Fun("@equ", a, b) %}
+comp -> comp "||" if {% ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q)) %}
+comp -> comp "&&" if {% ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q)) %}
+comp -> comp "++" if {% ([as, _, bs]) => App(App(Fun("Prepend"), as), bs) %}
+comp -> comp ">>" if {% ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs) %}
+comp -> comp ">>=" if {% ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs) %}
+comp -> comp "." if {% ([f, _, g]) => App(App(Fun("Compose"), f), g) %}
+comp -> comp "<"  if {% ([a, _, b]) => App(App(Fun("Less"), a), b) %}
+comp -> comp "<=" if {% ([a, _, b]) => App(App(Fun("LessEq"), a), b) %}
+comp -> comp ">"  if {% ([a, _, b]) => App(App(Fun("Greater"), a), b) %}
+comp -> comp ">=" if {% ([a, _, b]) => App(App(Fun("GreaterEq"), a), b) %}
+comp -> comp "==" if {% ([a, _, b]) => App(App(Fun("Equals"), a), b) %}
 comp -> if {% id %}
 
 if -> "if" expr "then" expr "else" expr {% 
@@ -126,33 +138,23 @@ tuple -> custom_op {% id %}
 custom_op -> custom_op %backtick %symb %backtick expr {% d => App(App(Fun(d[2].value), d[0]), d[4]) %}
 custom_op -> addsub {% id %}
 
-addsub -> addsub "+" multdiv {% ([a, _, b]) => Fun("@add", a, b) %}
-addsub -> addsub "-" multdiv {% ([a, _, b]) => Fun("@sub", a, b) %}
+addsub -> addsub "+" multdiv {% ([a, _, b]) => App(App(Fun("Add"), a), b) %}
+addsub -> addsub "-" multdiv {% ([a, _, b]) => App(App(Fun("Subtract"), a), b) %}
 addsub -> multdiv {% id %}
 
-multdiv -> multdiv "*" pow {% ([a, _, b]) => Fun("@mult", a, b) %}
-multdiv -> multdiv "/" pow {% ([a, _, b]) => Fun("@div", a, b) %}
-multdiv -> multdiv "%" pow {% ([a, _, b]) => Fun("@mod", a, b) %}
+multdiv -> multdiv "*" pow {% ([a, _, b]) => App(App(Fun("Multiply"), a), b) %}
+multdiv -> multdiv "/" pow {% ([a, _, b]) => App(App(Fun("Divide"), a), b) %}
+multdiv -> multdiv "%" pow {% ([a, _, b]) => App(App(Fun("Mod"), a), b) %}
 multdiv -> pow {% id %}
-pow -> pow "**" comp {% ([a, _, b]) => Fun("**", a, b) %}
+pow -> pow "**" comp {% ([a, _, b]) => App(App(Fun("Pow"), a), b) %}
 pow -> op_fun {% id %}
 
-op_fun -> "(" %binop ")" {%
-  d => Lambda(
-    [Var('__a'), Var('__b')],
-    Fun(opMap[d[1].value], Var('__a'), Var('__b'))
-  )
-%}
-op_fun -> "(" expr %binop ")" {%
-  d => Lambda(
-    [Var('__b')],
-    Fun(opMap[d[2].value], d[1], Var('__b'))
-  )
-%}
+op_fun -> "(" %binop ")" {% d => Fun(opMap[d[1].value]) %}
+op_fun -> "(" expr %binop ")" {% d => App(Fun(opMap[d[2].value]), d[1]) %}
 op_fun -> "(" %binop expr ")" {%
   d => Lambda(
     [Var('__a')],
-    Fun(opMap[d[1].value], Var('__a'), d[2])
+    App(App(Fun(opMap[d[1].value]), Var('__a')), d[2])
   )
 %}
 op_fun -> str {% id %}
