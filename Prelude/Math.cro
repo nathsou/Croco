@@ -7,10 +7,6 @@ Divisible a b = (a % b) == 0
 Even n = n `Divisible` 2
 Odd n = n % 2 == 1
 
--- should not overlap with the list rules
-Max a b = if a > b then a else b
-Min a b = if a < b then a else b
-
 -- FIXME: the javascript translator's externals should only do integer arithmetic
 IntDiv a b = let d = a / b in d - (d % 1)
 

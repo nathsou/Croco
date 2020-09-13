@@ -1,6 +1,6 @@
 LargestProd lst len = LargestProd' lst len 0
 LargestProd' [] len max = max
-LargestProd' lst len max = LargestProd' (Tail lst) len (Max (Prod (Take len lst)) max)
+LargestProd' lst len max = LargestProd' (Tail lst) len (Max [Prod (Take len lst), max])
 
 Main = LargestProd Data 13
 

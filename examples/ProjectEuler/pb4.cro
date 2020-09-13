@@ -4,7 +4,7 @@ PalindromeList lst = lst == (Rev lst)
 LargestPalindrome a max =
     if a >= 100 then
         let m = LargestPalindrome' a 999 max in
-        LargestPalindrome (a - 1) (Max m max)
+        LargestPalindrome (a - 1) (Max [m, max])
     else max
     
 LargestPalindrome' a b m =

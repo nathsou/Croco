@@ -14,7 +14,7 @@ const lexer = moo.compile({
   varname: /[a-z]+[a-zA-Z0-9]*/,
   symb: /[A-Z0-9@][a-zA-Z0-9']*/,
   arrow: '->',
-  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', ':', '.', '++', '>>', '>>=', '&&', '||'],
+  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', '/=', ':', '.', '++', '>>', '>>=', '&&', '||'],
   comma: ',',
   assign: '=',
   unit: '()',
@@ -69,6 +69,7 @@ const opMap = {
   '**': 'Pow',
   '%': 'Mod',
   '==': 'Equals',
+  '/=': 'NotEquals',
   '<': 'Less',
   '<=': 'LessEq',
   '>': 'Greater',
@@ -111,6 +112,7 @@ comp -> comp "<"  if {% ([a, _, b]) => App(App(Fun("Less"), a), b) %}
 comp -> comp "<=" if {% ([a, _, b]) => App(App(Fun("LessEq"), a), b) %}
 comp -> comp ">"  if {% ([a, _, b]) => App(App(Fun("Greater"), a), b) %}
 comp -> comp ">=" if {% ([a, _, b]) => App(App(Fun("GreaterEq"), a), b) %}
+comp -> comp "/=" if {% ([a, _, b]) => App(App(Fun("NotEquals"), a), b) %}
 comp -> comp "==" if {% ([a, _, b]) => App(App(Fun("Equals"), a), b) %}
 comp -> if {% id %}
 

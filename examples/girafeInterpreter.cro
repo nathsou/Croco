@@ -1,8 +1,4 @@
-IsFun (Fun (String chars) args) = IsList args
-IsFun x = False
-
-IsVar (Var (String _)) = True
-IsVar x = False
+import ./Parsing.cro
 
 -- Martelli and Montanari's term unification algorithm
 Unify s t = Unify' [(s, t)] []
@@ -15,9 +11,6 @@ Unify' (Fun f as, Fun f bs):tl subst =
     else None
 Unify' (Fun f as, Fun g bs):tl subst = None
 Unify' ts subst = None
-
-Peano 0 = Fun "0" []
-Peano n = Fun "S" [Peano n - 1] 
 
 Show t = String (Show' t)
 Show' (Var (String x)) = x
@@ -53,39 +46,6 @@ Normalize term rules = Normalize' (term, True) rules
 Normalize' (t, True) rules = Normalize' (Reduce t rules) rules
 Normalize' (t, False) rules = t
 
-Success res out = Some (res, String out)
-Fail cs = None
-
-Satisfy test [] = Fail []
-Satisfy test (String c):cs = Satisfy test c:cs
-Satisfy test c:cs = if test c then Success (String [c]) cs else Fail c:cs
-
-ParseDigit = Satisfy IsDigit
-ParseChar (String [c]) = Satisfy (== c)
-
-Then fst snd cs = Then' (fst cs) snd
-Then' None snd = None
-Then' (Some (r, String rem1)) snd = Then'' (snd rem1) r
-Then'' None r = None
-Then'' (Some (s, rem2)) r = Some ((r, s), rem2)
-
-Alt fst snd cs = Alt' (fst cs) snd cs
-Alt' None snd cs = snd cs
-Alt' (Some res) snd cs = Some res
-
-ParseLowerCase = Satisfy (\c -> (c >= CharCode "a") && (c <= CharCode "z"))
-ParseUpperCase = Satisfy (\c -> (c >= CharCode "A") && (c <= CharCode "Z"))
-
-ParseLetter = ParseLowerCase `Alt` ParseUpperCase
-ParseLetters = MapParser Join (Many ParseLetter)
-
-ParseAlphaNum = ParseLetter `Alt` ParseDigit
-ParseAlphaNums = MapParser Join (Many ParseAlphaNum)
-
-Many p cs = Many' (p cs) p ([], cs)
-Many' None p (res, out) = Some (Rev res, String out)
-Many' (Some (r, String rem)) p (res, out) = Many' (p rem) p (r:res, rem)
-
 ParseSymb = MapParser (\(h, tl) -> Join [h, tl]) (((ParseUpperCase `Alt` ParseDigit) `Then` ParseAlphaNums))
 
 ParseTerm = ParseFun `Alt` ParseVar
@@ -95,8 +55,6 @@ ParseArgs2 =
     MapParser
     (\(args, last) -> Append [last] args)
     ((Many (MapParser Fst (ParseTerm `Then` (ParseChar ",")))) `Then` ParseTerm)
-
-LazyThen fst snd cs = Then (fst ()) (snd ()) cs
 
 ParseFun = ParseFun2 `Alt` ParseFun1
 ParseFun1 = MapParser (\f -> Fun f []) ParseSymb
@@ -109,14 +67,7 @@ ParseFun2 =
 
 ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) (ParseLowerCase `Then` ParseAlphaNums)
 
-MapParser f p cs = MapParser' f (p cs)
-MapParser' f None = None
-MapParser' f (Some (r, rem)) = Some (f r, rem)
-
-RemoveSpaces (String cs) = RemoveSpaces' cs []
-RemoveSpaces' [] acc = String (Rev acc)
-WhiteSpace = CharCode " "
-RemoveSpaces' c:cs acc = RemoveSpaces' cs (if c == WhiteSpace then acc else c:acc) 
+RemoveSpaces = Filter (/= CharCode " ")
 
 -- Inserts a rule in a list of (head, rules with head) pairs
 InsertHead head rule rules = InsertHead' head rule rules [] 
@@ -134,7 +85,7 @@ Headify rules = Headify' rules []
 Headify' [] acc = acc
 Headify' r:rs acc = Headify' rs (InsertHead (RuleName r) r acc)
 
-ParseTermDefined t = Unwrap (MapOption Fst (ParseTerm (Chars (RemoveSpaces t))))
+ParseTermDefined t = Unwrap (MapOption Fst (ParseTerm (RemoveSpaces t)))
 
 ParseTRS rules =
     let p = ParseTermDefined in

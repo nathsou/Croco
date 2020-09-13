@@ -1,5 +1,5 @@
 Len (String chars) = Len chars
-Len = Fold (\_ acc -> acc + 1) 0
+Len lst = (Fold (\_ acc -> acc + 1) 0) lst
 
 Fold f base (String cs) = String (Fold f base cs)
 Fold f base lst = Fold' f lst base
@@ -26,6 +26,13 @@ IsList h:tl = True
 IsList x = False
 
 Take n lst = Fst (SplitAt n lst)
+
+DropWhile pred (String cs) = String (DropWhile pred cs)
+DropWhile pred lst = DropWhile' pred lst True
+DropWhile' _ res False = res
+DropWhile' _ [] _ = []
+DropWhile' pred _:s:tl True = DropWhile' pred s:tl (pred s)
+DropWhile' pred [v] True = DropWhile' pred [] (pred v)
 
 Drop 0 lst = lst
 Drop _ [] = []

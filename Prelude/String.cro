@@ -13,7 +13,18 @@ JoinWith' del [] acc = acc
 JoinWith' del [String h] acc = h `Prepend` acc
 JoinWith' del (String h):tl acc = JoinWith' del tl ((h `Append` del) `Prepend` acc)
 
+DigitOfChar (String [c]) = DigitOfChar c
 DigitOfChar c = if (c >= 48) && (c <= 57) then Some (c - 48) else None
 
 IsDigit (String [c]) = IsDigit c
+IsDigit (String c:cs) = False
+IsDigit "" = False
 IsDigit c = (c >= CharCode "0") && (c <= CharCode "9")
+
+TrimLeft = DropWhile (== CharCode " ")
+
+Less (String as) (String bs) = StringLess as bs
+StringLess [] [] = False
+StringLess _ [] = False
+StringLess [] _ = True
+StringLess a:as b:bs = a < b || StringLess as bs

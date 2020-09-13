@@ -1,0 +1,42 @@
+-- simple functional parsing library
+
+Satisfy _ "" = None
+Satisfy test (String c:cs) =
+        if test c then
+            Some (String [c], String cs)
+        else
+            None
+
+ParseDigit = Satisfy IsDigit
+ParseChar (String [c]) = Satisfy (== c)
+
+Then fst snd cs = Then' (fst cs) snd
+Then' None _ = None
+Then' (Some (r, rem1)) snd = Then'' (snd rem1) r
+Then'' None _ = None
+Then'' (Some (s, rem2)) r = Some ((r, s), rem2)
+
+LazyThen fst snd cs = Then (fst ()) (snd ()) cs
+
+Alt fst snd cs = Alt' (fst cs) snd cs
+Alt' None snd cs = snd cs
+Alt' (Some res) snd cs = Some res
+
+LazyAlt fst snd cs = Alt (fst ()) (snd ()) cs
+
+ParseLowerCase = Satisfy (\c -> (c >= CharCode "a") && (c <= CharCode "z"))
+ParseUpperCase = Satisfy (\c -> (c >= CharCode "A") && (c <= CharCode "Z"))
+
+ParseLetter = ParseLowerCase `Alt` ParseUpperCase
+ParseLetters = MapParser Join (Many ParseLetter)
+
+ParseAlphaNum = ParseLetter `Alt` ParseDigit
+ParseAlphaNums = MapParser Join (Many ParseAlphaNum)
+
+Many p cs = Many' (p cs) p ([], cs)
+Many' None p (res, out) = Some (Rev res, out)
+Many' (Some (r, rem)) p (res, out) = Many' (p rem) p (r:res, rem)
+
+MapParser f p cs = MapParser' f (p cs)
+MapParser' _ None = None
+MapParser' f (Some (r, rem)) = Some (f r, rem)
