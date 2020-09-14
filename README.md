@@ -1,12 +1,14 @@
 # Croco
 
-A basic purely functional programming language which compiles down to
+A simple purely functional programming language which compiles down to
 [girafe](https://github.com/nathsou/Girafe/).
 
 ## Usage
 
 ```bash
-$ croco source.cro [out] [js/haskell/ocaml/girafe]
+$ interpret: croco src.cro [out]
+$ compile to intermediate language: croco src.cro [out] [js/haskell/ocaml/girafe]
+$ compile to binary: croco src.cro -c out
 ```
 
 ### Todo

@@ -4,7 +4,7 @@ type L = Term | LambdaExpr;
 
 let lambdasCount = 0;
 
-export const removeLambdas = (prog: Prog<L>): Prog<Exclude<L, LambdaExpr>> => {
+export const liftLambdas = (prog: Prog<L>): Prog<Exclude<L, LambdaExpr>> => {
     const newRules: Prog<Term> = [];
     lambdasCount = 0;
 
@@ -12,7 +12,7 @@ export const removeLambdas = (prog: Prog<L>): Prog<Exclude<L, LambdaExpr>> => {
         newRules.push({
             type: 'rule',
             lhs: lhs as Term,
-            rhs: removeLambdasIn(
+            rhs: lift(
                 rhs,
                 rule => { newRules.push(rule); }
             )
@@ -22,7 +22,7 @@ export const removeLambdas = (prog: Prog<L>): Prog<Exclude<L, LambdaExpr>> => {
     return newRules;
 };
 
-const removeLambdasIn = (
+const lift = (
     expr: L,
     addRule: (rule: RuleDecl<Term>) => void
 ): Term => {
@@ -34,7 +34,7 @@ const removeLambdasIn = (
             const rule: RuleDecl<Exclude<L, LambdaExpr>> = {
                 type: 'rule',
                 lhs: appChain(fun(name), [...vs, expr.x]),
-                rhs: removeLambdasIn(expr.rhs, addRule)
+                rhs: lift(expr.rhs, addRule)
             };
 
             addRule(rule);
@@ -45,7 +45,7 @@ const removeLambdasIn = (
             return {
                 type: 'fun',
                 name: expr.name,
-                args: expr.args.map(t => removeLambdasIn(t, addRule))
+                args: expr.args.map(t => lift(t, addRule))
             };
     }
 

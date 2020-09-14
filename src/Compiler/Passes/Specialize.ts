@@ -1,8 +1,8 @@
-import { Arities, arity, decons, fun, Fun, isFun, isVar, mapify, Rule, showTerm, Symb, Term, TRS, Var } from "girafe";
+import { Arities, arity, CompilationResult, CompilerPass, decons, fun, Fun, isFun, isVar, mapify, Ok, Rule, showTerm, Symb, Term, TRS, Var } from "girafe";
 import { rev } from "../../Parser/Expr";
 
 // Creates intermediate rules for partially applied functions
-export const specializePartialFunctions = (trs: TRS): TRS => {
+export const specializePartialFunctions: CompilerPass = (trs: TRS): CompilationResult => {
     const newRules: Rule[] = [];
     const uncurried = uncurryTRS(trs);
     const arities: Arities = new Map();
@@ -41,7 +41,7 @@ export const specializePartialFunctions = (trs: TRS): TRS => {
 
     }
 
-    return mapify(newRules.map(r => specializeRule(r, arities)));
+    return Ok(mapify(newRules.map(r => specializeRule(r, arities))));
 };
 
 const uncurryTRS = (trs: TRS): TRS => {
@@ -63,7 +63,7 @@ const uncurryTRS = (trs: TRS): TRS => {
 };
 
 // transforms app(app(+, a), b) into +(a, b)
-const uncurry = (t: Term, args: Term[] = []): Term => {
+export const uncurry = (t: Term, args: Term[] = []): Term => {
     if (isVar(t)) return t;
     if (t.args.length === 0 && args.length > 0) {
         return { name: t.name, args: rev(args) };

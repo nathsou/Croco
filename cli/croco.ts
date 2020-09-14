@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { unlinkSync, writeFileSync } from "fs";
-import { arithmeticExternals, fun, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, OCamlTranslator, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
+import { arithmeticExternals, fun, JSTranslator, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, OCamlTranslator, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { postprocessTerm } from "../src/Parser/Expr";
 import { parse } from "../src/Parser/Parser";
@@ -85,6 +85,10 @@ if (process.argv[3] === '-c') {
     const transpile = (trs: TRS, target: Targets | 'girafe') => {
         if (target === 'girafe') {
             return showTRS(trs);
+        }
+
+        if (target === 'js') {
+            return new JSTranslator(trs, externals('js'), makeNat).translate();
         }
 
         return translate(trs, target, externals);
