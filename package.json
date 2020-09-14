@@ -1,6 +1,6 @@
 {
   "name": "croco",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "Basic purely functional programming language based on term rewriting",
   "main": "index.js",
   "scripts": {
