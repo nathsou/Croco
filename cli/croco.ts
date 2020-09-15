@@ -1,22 +1,22 @@
 import { spawn } from "child_process";
 import { unlinkSync, writeFileSync } from "fs";
-import { arithmeticExternals, fun, JSTranslator, makeNat, mergeExternals, metaExternals, nodeWorkerNormalizer, OCamlTranslator, showTRS, supportedTargets, Targets, translate, TRS } from "girafe";
+import { fun, JSTranslator, makeNat, nodeWorkerRawNormalizer, OCamlTranslator, showTRS, Targets, translate, TRS } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
-import { postprocessTerm } from "../src/Parser/Expr";
+import { crocoExternals } from "../src/Compiler/Externals/Externals";
 import { parse } from "../src/Parser/Parser";
 
-const OCAMLC = 'ocamlc';
+const OCAMLC = 'ocamlopt';
 
 const printUsage = () => {
     console.info('The inglorious Croco compiler - github.com/nathsou/Croco');
     console.info('---------------------------------------------------------');
     console.info('interpret: croco src.cro [out]');
-    console.info('compile to intermediate language: croco src.cro [out] [js/haskell/ocaml/girafe]');
+    console.info('compile to intermediate language: croco src.cro [out] [js/ocaml/girafe]');
     console.info('compile to binary: croco src.cro -c out');
     process.exit(0);
 };
 
-const externals = mergeExternals(arithmeticExternals, metaExternals());
+const externals = crocoExternals;
 
 const src = process.argv[2];
 
@@ -33,7 +33,7 @@ if (process.argv[3] === '-c') {
 
     const runOcamlc = (srcFile: string): Promise<void> => {
         return new Promise<void>((resolve, reject) => {
-            const instance = spawn(OCAMLC, [srcFile, '-o', out]);
+            const instance = spawn(OCAMLC, [srcFile, '-w', '-26', '-w', '-8', '-o', out]);
 
             let stderr = '';
 
@@ -48,12 +48,13 @@ if (process.argv[3] === '-c') {
             instance.on('close', () => {
                 // remove the temporary file
                 unlinkSync(`${out}.ml`);
-                unlinkSync(`${out}.cmi`);
-                unlinkSync(`${out}.cmo`);
 
                 if (stderr !== '') {
                     reject(stderr);
                 } else {
+                    unlinkSync(`${out}.cmi`);
+                    unlinkSync(`${out}.cmx`);
+                    unlinkSync(`${out}.o`);
                     resolve();
                 }
             });
@@ -63,7 +64,7 @@ if (process.argv[3] === '-c') {
     const sourceWithQuery = () => {
         return [
             ocamlt.translate(),
-            'in print_endline (show_term (grf_Main ()));;'
+            `in print_endline (grf__at_show (grf_Main ()));;`
         ].join('\n');
     };
 
@@ -80,7 +81,7 @@ if (process.argv[3] === '-c') {
 } else {
     const [out, target] = process.argv.slice(3);
 
-    const targets = [...supportedTargets, 'girafe'];
+    const targets = ['js', 'ocaml', 'girafe'];
 
     const transpile = (trs: TRS, target: Targets | 'girafe') => {
         if (target === 'girafe') {
@@ -114,9 +115,9 @@ if (process.argv[3] === '-c') {
         // console.log(postprocessTerm(norm(fun('Main'))));
 
         if (trs.has('Main')) {
-            const normalize = nodeWorkerNormalizer(trs, externals('js'), makeNat);
+            const normalize = nodeWorkerRawNormalizer(trs, externals('js'), makeNat);
             normalize(fun('Main')).then(out => {
-                console.log(postprocessTerm(out));
+                console.log(out);
             });
         }
     }

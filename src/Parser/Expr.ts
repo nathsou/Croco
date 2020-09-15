@@ -117,7 +117,7 @@ export const postprocessList = (
 
     const [h, tl] = tail.args;
 
-    return `${postprocessTerm(head)}, ${postprocessList(h, tl, nil, cons)}`
+    return `${postprocessTerm(head)}, ${postprocessList(h, tl, nil, cons)}`;
 };
 
 export const showExpr = (expr: Expr): string => {

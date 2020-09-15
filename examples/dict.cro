@@ -46,15 +46,15 @@ TL (T x count ll lr) v l r =
 
 Less (k1, v1) (k2, vs) = k1 < k2
 
-Insert EmptyDict x = T x 1 EmptyDict EmptyDict
-Insert (T v count l r) x =
+Insert x EmptyDict = T x 1 EmptyDict EmptyDict
+Insert x (T v count l r) =
     if x < v then
-        T' v (Insert l x) r
+        T' v (Insert x l) r
     else if v < x then
-        T' v l (Insert r x)
+        T' v l (Insert x r)
     else
         T v count l r
 
 ArrayOf lst = ArrayOf' lst EmptyDict 0
 ArrayOf' [] dict i = dict
-ArrayOf' (h:tl) dict i = ArrayOf' tl (Insert dict (i, h)) (i + 1)
+ArrayOf' (h:tl) dict i = ArrayOf' tl (Insert (i, h) dict) (i + 1)
