@@ -6,12 +6,12 @@ ToLower = Map (\c -> if (c >= 65) && (c <= 90) then c + 32 else c)
 
 Join lst = String (Join' (Rev lst) [])
 Join' [] acc = acc
-Join' (String h):tl acc = Join' tl (Prepend h acc)
+Join' (String h):tl acc = Join' tl (h ++ acc)
 
-JoinWith (String del) lst = String (JoinWith' del lst [])
+JoinWith (String del) lst = String (JoinWith' del (Rev lst) [])
 JoinWith' del [] acc = acc
-JoinWith' del [String h] acc = h `Prepend` acc
-JoinWith' del (String h):tl acc = JoinWith' del tl ((h `Append` del) `Prepend` acc)
+JoinWith' del [String h] acc = h ++ acc
+JoinWith' del (String h):tl acc = JoinWith' del tl (del ++ h ++ acc)
 
 DigitOfChar (String [c]) = DigitOfChar c
 DigitOfChar c = if (c >= 48) && (c <= 57) then Some (c - 48) else None
@@ -27,4 +27,13 @@ Less (String as) (String bs) = StringLess as bs
 StringLess [] [] = False
 StringLess _ [] = False
 StringLess [] _ = True
-StringLess a:as b:bs = a < b || StringLess as bs
+StringLess a:as b:bs = if a == b then as `StringLess` bs else a < b
+
+Greater (String as) (String bs) = StringGtr as bs
+StringGtr [] [] = False
+StringGtr _ [] = True
+StringGtr [] _ = False
+StringGtr a:as b:bs = if a == b then as `StringGtr` bs else a > b
+
+GreaterEq (String as) (String bs) = Not (as `StringLess` bs)
+LessEq (String as) (String bs) = Not (as `StringGtr` bs)

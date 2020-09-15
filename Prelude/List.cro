@@ -85,12 +85,7 @@ Snd (_, b) = b
 
 Fst (a, _, _) = a
 Snd (_, b, _) = b
-Third (_, _, c) = c
-
-Fst (a, _, _, _) = a
-Snd (_, b, _, _) = b
-Third (_, _, c, _) = c
-Fourth (_, _, _, d) = d
+Trd (_, _, c) = c
 
 Head h:_ = h
 Tail _:tl = tl
@@ -127,3 +122,9 @@ ChunksRev' len lst chunks =
     ChunksRev' len tl (chunk:chunks)
     
 Chunks len lst = Rev (ChunksRev len lst)
+
+
+-- Slide 2 [1, 2, 3, 4, 5] -> [[1, 2], [2, 3], [3, 4], [4, 5]]
+Slide len lst = let (win, tail) = SplitAt len lst in Slide' win tail []
+Slide' a [] acc = Rev (a:acc)
+Slide' a:as b:bs acc = Slide' (as ++ [b]) bs ((a:as):acc)

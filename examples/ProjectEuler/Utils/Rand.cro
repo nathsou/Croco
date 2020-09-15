@@ -9,3 +9,12 @@ NextRand seed = (PRNGA * seed + PRNGC) % PRNGM
 Rands n seed = Rands' n (NextRand seed) []
 Rands' 0 _ acc = acc
 Rands' n seed acc = Rands' (n - 1) (NextRand seed) (seed:acc)
+
+RandInt min max seed = min + (NextRand seed) % (max - min)
+
+RandString seed = RandStringOfLen (RandInt 0 20 seed) seed
+
+RandStringOfLen len seed = RandStringOfLen' len seed []
+RandStringOfLen' 0 _ acc = String acc
+RandStringOfLen' len seed acc =
+    RandStringOfLen' (len - 1) (NextRand seed) ((RandInt 32 126 seed):acc)

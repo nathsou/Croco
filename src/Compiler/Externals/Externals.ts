@@ -6,7 +6,7 @@ export type CrocoTargets = 'js' | 'ocaml';
 
 export type CrocoExts = 'equ' | CrocoArithmeticExternals;
 
-export const crocoExternals: ExternalsFactory<CrocoExts, CrocoTargets>
+export const crocoExternals: ExternalsFactory<CrocoExts, CrocoTargets | 'native'>
     = mergeExternals(arithmeticExternals, metaExternals);
 
 

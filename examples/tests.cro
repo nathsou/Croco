@@ -3,26 +3,35 @@ import ./ProjectEuler/Utils/Rand.cro
 import ./ProjectEuler/Utils/BigInt.cro
 import ./Dict.cro
 
+RUNS = 500
+SEED = 1783
+
 -- Check that `Divisors` gives the correct number of divisors
 TestDivisors = 
-    let rnds = Map (% 1000) (Rands 1000 1621) in
+    let rnds = Map (% 1000) (Rands RUNS SEED) in
     All (\n -> (Len (Divisors n) == DivisorsCount n)) rnds
 
 -- Check that `BigAdd` works as expected
 TestBigAdd = 
-    let rnds = Chunks 2 (Rands (2 * 1000) 1331) in
+    let rnds = Chunks 2 (Rands (2 * RUNS) SEED) in
     All (\[a, b] -> BigAdd (BigIntOf a) (BigIntOf b) == BigIntOf (a + b)) rnds
 
 -- Check that dictionnary lookup works as expected
+-- with integer keys
 TestDict =
-    let len = 1000 in
-    let rnds = Map (% 10000) (Rands len 1998) in
+    let rnds = Map (% 10000) (Rands RUNS SEED) in
     let arr = ArrayOf rnds in
-    let idxWithVals = Zip (Range 0 (len - 1)) rnds in
+    let idxWithVals = Zip (Range 0 (RUNS - 1)) rnds in
     All (\(i, val) -> (Lookup i arr) == (Some val)) idxWithVals
 
+-- with string keys
+TestDict2 = 
+    let keys = Map RandString (Rands RUNS SEED) in
+    let dict = Fold (\k d -> Insert (k, k) d) EmptyDict keys in
+    All (\k -> (Some k == Lookup k dict)) keys
+
 Main =  
-    if All Id [TestDivisors, TestBigAdd, TestDict] then
+    if All Id [TestDivisors, TestBigAdd, TestDict, TestDict2] then
         "Everything is fine"
     else 
         "Something went wrong"

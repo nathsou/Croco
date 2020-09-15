@@ -1,4 +1,5 @@
 import ./Parsing.cro
+import ./Dict.cro
 
 -- Martelli and Montanari's term unification algorithm
 Unify s t = Unify' [(s, t)] []
@@ -7,26 +8,17 @@ Unify' (Var a, Var a):ts subst = Unify' ts subst
 Unify' (Var a, t):ts subst = Unify' ts (a, t):subst
 Unify' (Fun f as, Fun f bs):tl subst =
     if (Len as == Len bs) then
-        Unify' (Prepend (Zip as bs) tl) subst
+        Unify' (Zip as bs ++ tl) subst
     else None
 Unify' (Fun f as, Fun g bs):tl subst = None
 Unify' ts subst = None
 
-Show t = String (Show' t)
-Show' (Var (String x)) = x
-Show' (Fun (String f) []) = f
-Show' (Fun (String f) args) = 
-    Prepend (Prepend f (Prepend (Chars "(") ((Chars (JoinWith ", " (Map Show (Rev args))))))) (Chars ")")
-
-FindRule name term [] = None
-FindRule name t (name, rs):rules = FindRule' t rs
-FindRule name t (f, rs):rules = FindRule name t rules
-
-FindRule' _ [] = None
-FindRule' t (lhs, rhs):rs = FindRule'' t (Unify lhs t) (lhs, rhs) rs
-
-FindRule'' _ (Some subst) r rules = Some (r, subst)
-FindRule'' t subst _ rules = FindRule' t rules
+FindRule f t m = FindRule' (Lookup f m) t
+FindRule' None _ = None
+FindRule' (Some rules) t = FindRule'' t rules
+FindRule'' t (lhs, rhs):rs = FindRule''' t (Unify lhs t) (lhs, rhs) rs
+FindRule''' _ (Some subst) r _ = Some (r, subst)
+FindRule''' t None _ rules = FindRule'' t rules
 
 FindSubst x [] = Var x 
 FindSubst x (x, z):_ = z
@@ -45,6 +37,13 @@ Reduce' t (Some ((lhs, rhs), subst)) = (Substitute rhs subst, True)
 Normalize term rules = Normalize' (term, True) rules
 Normalize' (t, True) rules = Normalize' (Reduce t rules) rules
 Normalize' (t, False) rules = t
+
+Show t = Show' t
+Show' (Var x) = x
+Show' (Fun f []) = f
+Show' (Fun f args) = f ++ "(" ++ JoinWith ", " (Map Show args) ++ ")"
+
+ShowRule (lhs, rhs) = Show lhs ++ " -> " ++ Show rhs
 
 ParseSymb = MapParser (\(h, tl) -> Join [h, tl]) (((ParseUpperCase `Alt` ParseDigit) `Then` ParseAlphaNums))
 
@@ -69,29 +68,20 @@ ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) (ParseLowerCase `Then` Par
 
 RemoveSpaces = Filter (/= CharCode " ")
 
--- Inserts a rule in a list of (head, rules with head) pairs
-InsertHead head rule rules = InsertHead' head rule rules [] 
-InsertHead' head rule [] acc = (head, [rule]):acc
-InsertHead' head rule (f, rs):tl acc = 
-    if f == head then
-        Prepend acc ((head, rule:rs):tl)
-    else
-        InsertHead' head rule tl ((f, rs):acc)
-
-RuleName (Fun name _, _) = name
+RuleName (Fun f _, _) = f
 
 -- Groups rules corresponding to a given head together
-Headify rules = Headify' rules []
-Headify' [] acc = acc
-Headify' r:rs acc = Headify' rs (InsertHead (RuleName r) r acc)
+Dictify rules = Dictify' rules EmptyDict
+Dictify' [] m = m
+Dictify' r:rs m = Dictify'' (Lookup (RuleName r) m) r rs m
+Dictify'' None r rs m = Dictify' rs (Insert (RuleName r, [r]) m)
+Dictify'' (Some rules) r rs m = Dictify' rs (Insert (RuleName r, rules ++ [r]) m)
 
 ParseTermDefined t = Unwrap (MapOption Fst (ParseTerm (RemoveSpaces t)))
 
 ParseTRS rules =
     let p = ParseTermDefined in
-    let trs = Headify (Map (\(a, b) -> (p a, p b)) rules) in
-    let trs2 = Map (\(f, rules) -> (f, Rev rules)) trs in 
-    SortWith (\(f1, rs1) (f2, rs2) -> Len rs1 > Len rs2) trs2
+    Dictify (Map (\(a, b) -> (p a, p b)) rules)
 
 PeanoTRS = ParseTRS [
         ("Add(a, 0)", "a"),
@@ -119,12 +109,12 @@ PeanoTRS = ParseTRS [
         ("Range2(S(n), acc)", "Range2(n, Cons(n, acc))"),
         ("Len(Nil)", "0"),
         ("Len(Cons(h, tl))", "S(Len(tl))")
-    ]
+]
 
 Norm (String term) trs = Normalize (ParseTermDefined (String term)) trs
 
 Q = Show (Norm "Len(Range(Add(Mult(3, 7), 1)))" PeanoTRS)
 Q2 = Show (Norm "Mult(10, 10)" PeanoTRS)
-Q3 = Show (Norm "Range(Mult(7, 3))" PeanoTRS)
+Q3 = Show (Norm "Range(Mult(3, 7))" PeanoTRS)
 
 Main = Q3

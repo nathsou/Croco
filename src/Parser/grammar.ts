@@ -36,7 +36,7 @@ const lexer = moo.compile({
   semicolon: ';',
   lambda: '\\',
   comment: /\-\-.*?$/,
-  string: /"(?:\\["\\]|[^\n"\\])*"/,
+  string: /".*?"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
@@ -69,7 +69,25 @@ const List = vals => {
   return Cons(vals[0], List(vals.slice(1)));
 };
 
-const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
+const specialChars = new Map([
+  ["\\b", "\b"],
+  ["\\f", "\f"],
+  ["\\n", "\n"],
+  ["\\r", "\r"],
+  ["\\t", "\t"],
+  ["\\v", "\v"],
+  ["\\", "\\"],
+  ["\"", '"'],
+  ["\'", "'"]
+]);
+
+const Str = str =>
+  App(
+    Fun('String'),
+      List(
+        (specialChars.get(str) ?? str).split('').map(c => Fun(`${c.charCodeAt(0)}`))
+      )
+  );
 
 const opMap = {
   '+': 'Add',
@@ -132,24 +150,24 @@ const grammar: Grammar = {
     {"name": "lambda", "symbols": [{"literal":"\\"}, "lambda_args", {"literal":"->"}, "expr"], "postprocess": d => Lambda(d[1], d[3])},
     {"name": "lambda", "symbols": ["let_in"], "postprocess": id},
     {"name": "let_in", "symbols": [{"literal":"let"}, "expr", {"literal":"="}, "expr", {"literal":"in"}, "expr"], "postprocess": d => LetIn(d[1], d[3], d[5])},
-    {"name": "let_in", "symbols": ["comp"], "postprocess": id},
-    {"name": "comp", "symbols": ["comp", {"literal":"||"}, "if"], "postprocess": ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q))},
-    {"name": "comp", "symbols": ["comp", {"literal":"&&"}, "if"], "postprocess": ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q))},
-    {"name": "comp", "symbols": ["comp", {"literal":"++"}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("Prepend"), as), bs)},
-    {"name": "comp", "symbols": ["comp", {"literal":">>"}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs)},
-    {"name": "comp", "symbols": ["comp", {"literal":">>="}, "if"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs)},
-    {"name": "comp", "symbols": ["comp", {"literal":"."}, "if"], "postprocess": ([f, _, g]) => App(App(Fun("Compose"), f), g)},
-    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Less"), a), b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("LessEq"), a), b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">"}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Greater"), a), b)},
-    {"name": "comp", "symbols": ["comp", {"literal":">="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("GreaterEq"), a), b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"/="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("NotEquals"), a), b)},
-    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "if"], "postprocess": ([a, _, b]) => App(App(Fun("Equals"), a), b)},
-    {"name": "comp", "symbols": ["if"], "postprocess": id},
+    {"name": "let_in", "symbols": ["if"], "postprocess": id},
     {"name": "if", "symbols": [{"literal":"if"}, "expr", {"literal":"then"}, "expr", {"literal":"else"}, "expr"], "postprocess":  
         ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
         },
-    {"name": "if", "symbols": ["app"], "postprocess": id},
+    {"name": "if", "symbols": ["comp"], "postprocess": id},
+    {"name": "comp", "symbols": ["comp", {"literal":"||"}, "app"], "postprocess": ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q))},
+    {"name": "comp", "symbols": ["comp", {"literal":"&&"}, "app"], "postprocess": ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q))},
+    {"name": "comp", "symbols": ["comp", {"literal":"++"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("Prepend"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":">>"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":">>="}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":"."}, "app"], "postprocess": ([f, _, g]) => App(App(Fun("Compose"), f), g)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<"}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("Less"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"<="}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("LessEq"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">"}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("Greater"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":">="}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("GreaterEq"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"/="}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("NotEquals"), a), b)},
+    {"name": "comp", "symbols": ["comp", {"literal":"=="}, "app"], "postprocess": ([a, _, b]) => App(App(Fun("Equals"), a), b)},
+    {"name": "comp", "symbols": ["app"], "postprocess": id},
     {"name": "app", "symbols": ["app", "cons"], "postprocess": ([lhs, rhs]) => App(lhs, rhs)},
     {"name": "app", "symbols": ["cons"], "postprocess": id},
     {"name": "cons", "symbols": ["list", {"literal":":"}, "cons"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},

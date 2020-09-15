@@ -42,14 +42,15 @@ const jsMetaExternals: Externals<'js', CrocoMetaExternals> = {
                 if (isVar(tail) || (tail.name !== cons && tail.name !== nil)) {
                     throw new Error(
                         'Expected "' + cons + '" or "' + nil + '" at the end of a ' +
-                        nil === 'Nil' ? 'list' : 'tuple' + ', got: ' + JSON.stringify(tail));
+                        nil === 'Nil' ? 'list' : 'tuple' + ', got: ' + JSON.stringify(tail)
+                    );
                 }
             
                 if (tail.name === nil) return ${name}(head);
             
                 const [h, tl] = tail.args;
             
-                return ${name}(head) + ', ' + ${name}(h, tl, nil, cons);
+                return ${name}(head) + ', ' + postprocessList(h, tl, nil, cons);
             };
 
             const fromList = (lst, acc = []) => {
@@ -65,24 +66,25 @@ const jsMetaExternals: Externals<'js', CrocoMetaExternals> = {
             };
         
             switch (f) {
-                case '${renameSymb(':')}':
+                case ':':
                     {
                         const [h, tl] = term.args;
                         return '[' + postprocessList(h, tl) + ']';
                     }
-                case '${renameSymb(';')}':
+                case ';':
                     {
                         const [h, tl] = term.args;
                         return '(' + postprocessList(h, tl, 'Unit', ';') + ')';
                     }
-                    case '${renameSymb('app')}':
-                    const [f, x] = term.args;
-        
-                    if (isFun(f) && f.name === 'String') {
-                        return '"' + String.fromCharCode(...fromList(x).map(c => parseInt(c))) + '"';
-                    }
-        
-                    return '(' + ${name}(f) + ' ' + ${name}(x) + ')';
+                    case 'app':
+                    case 'grf_app':
+                        const [f, x] = term.args;
+            
+                        if (isFun(f) && f.name === 'String') {
+                            return '"' + String.fromCharCode(...fromList(x).map(c => parseInt(c))) + '"';
+                        }
+            
+                        return '(' + ${name}(f) + ' ' + ${name}(x) + ')';
                 default:
                     return '(' + term.name + ' ' + term.args.map(${name}).join(' ') + ')';
             }

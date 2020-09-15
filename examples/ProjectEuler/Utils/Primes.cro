@@ -49,6 +49,6 @@ Divisors' n i acc =
 MirrorDivisors n i divs = MirrorDivisors' n i (Rev divs) (Map (n /) divs)
 MirrorDivisors' n i leftDivs rightDivs =
     if i * i == n then
-        leftDivs `Prepend` (i : rightDivs)
+        leftDivs ++ (i : rightDivs)
     else
-        leftDivs `Prepend` rightDivs
+        leftDivs ++ rightDivs

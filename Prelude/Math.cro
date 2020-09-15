@@ -7,9 +7,6 @@ Divisible a b = (a % b) == 0
 Even n = n `Divisible` 2
 Odd n = n % 2 == 1
 
--- FIXME: the javascript translator's externals should only do integer arithmetic
-IntDiv a b = let d = a / b in d - (d % 1)
-
 -- Gives the list of digits of n
 Digits n = Digits' n []
 Digits' 0 ds = 0:ds
@@ -22,7 +19,7 @@ Digits' 6 ds = 6:ds
 Digits' 7 ds = 7:ds
 Digits' 8 ds = 8:ds
 Digits' 9 ds = 9:ds
-Digits' n ds = Digits' (n `IntDiv` 10) ((n % 10) : ds)
+Digits' n ds = Digits' (n / 10) ((n % 10) : ds)
 
 FromDigits ds = FromDigits' (Rev ds) 0 1
 FromDigits' [] sum _ = sum

@@ -1,0 +1,5 @@
+PropagateUp row1 row2 = Map (\(a, b) -> a + b) (Zip (Map Max (Slide 2 row2)) row1)
+
+MaxPathSum triangle = let r:rs = Rev triangle in MaxPathSum' rs r
+MaxPathSum' [] [res] = res
+MaxPathSum' row:rows acc = MaxPathSum' rows (PropagateUp row acc)

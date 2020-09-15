@@ -26,7 +26,7 @@ const lexer = moo.compile({
   semicolon: ';',
   lambda: '\\',
   comment: /\-\-.*?$/,
-  string: /"(?:\\["\\]|[^\n"\\])*"/,
+  string: /".*?"/,
   backtick: '`',
   nl: { match: /\n/, lineBreaks: true },
 });
@@ -59,7 +59,25 @@ const List = vals => {
   return Cons(vals[0], List(vals.slice(1)));
 };
 
-const Str = str => App(Fun('String'), List(str.split('').map(c => Fun(`${c.charCodeAt(0)}`))));
+const specialChars = new Map([
+  ["\\b", "\b"],
+  ["\\f", "\f"],
+  ["\\n", "\n"],
+  ["\\r", "\r"],
+  ["\\t", "\t"],
+  ["\\v", "\v"],
+  ["\\", "\\"],
+  ["\"", '"'],
+  ["\'", "'"]
+]);
+
+const Str = str =>
+  App(
+    Fun('String'),
+      List(
+        (specialChars.get(str) ?? str).split('').map(c => Fun(`${c.charCodeAt(0)}`))
+      )
+  );
 
 const opMap = {
   '+': 'Add',
@@ -100,26 +118,26 @@ lambda -> "\\" lambda_args "->" expr {% d => Lambda(d[1], d[3]) %}
 lambda -> let_in {% id %}
 
 let_in -> "let" expr "=" expr "in" expr {% d => LetIn(d[1], d[3], d[5]) %}
-let_in -> comp {% id %}
-
-comp -> comp "||" if {% ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q)) %}
-comp -> comp "&&" if {% ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q)) %}
-comp -> comp "++" if {% ([as, _, bs]) => App(App(Fun("Prepend"), as), bs) %}
-comp -> comp ">>" if {% ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs) %}
-comp -> comp ">>=" if {% ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs) %}
-comp -> comp "." if {% ([f, _, g]) => App(App(Fun("Compose"), f), g) %}
-comp -> comp "<"  if {% ([a, _, b]) => App(App(Fun("Less"), a), b) %}
-comp -> comp "<=" if {% ([a, _, b]) => App(App(Fun("LessEq"), a), b) %}
-comp -> comp ">"  if {% ([a, _, b]) => App(App(Fun("Greater"), a), b) %}
-comp -> comp ">=" if {% ([a, _, b]) => App(App(Fun("GreaterEq"), a), b) %}
-comp -> comp "/=" if {% ([a, _, b]) => App(App(Fun("NotEquals"), a), b) %}
-comp -> comp "==" if {% ([a, _, b]) => App(App(Fun("Equals"), a), b) %}
-comp -> if {% id %}
+let_in -> if {% id %}
 
 if -> "if" expr "then" expr "else" expr {% 
 ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
 %}
-if -> app {% id %}
+if -> comp {% id %}
+
+comp -> comp "||"  app {% ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q)) %}
+comp -> comp "&&"  app {% ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q)) %}
+comp -> comp "++"  app {% ([as, _, bs]) => App(App(Fun("Prepend"), as), bs) %}
+comp -> comp ">>"  app {% ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs) %}
+comp -> comp ">>=" app {% ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs) %}
+comp -> comp "."   app {% ([f, _, g]) => App(App(Fun("Compose"), f), g) %}
+comp -> comp "<"   app {% ([a, _, b]) => App(App(Fun("Less"), a), b) %}
+comp -> comp "<="  app {% ([a, _, b]) => App(App(Fun("LessEq"), a), b) %}
+comp -> comp ">"   app {% ([a, _, b]) => App(App(Fun("Greater"), a), b) %}
+comp -> comp ">="  app {% ([a, _, b]) => App(App(Fun("GreaterEq"), a), b) %}
+comp -> comp "/="  app {% ([a, _, b]) => App(App(Fun("NotEquals"), a), b) %}
+comp -> comp "=="  app {% ([a, _, b]) => App(App(Fun("Equals"), a), b) %}
+comp -> app {% id %}
 
 app -> app cons {% ([lhs, rhs]) => App(lhs, rhs) %}
 app -> cons {% id %}

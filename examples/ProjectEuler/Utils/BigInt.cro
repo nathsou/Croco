@@ -5,11 +5,23 @@ BigIntDigits (BigInt ds) = ds
 FromBigInt (BigInt ds) = FromDigits ds
 
 BigAdd (BigInt as) (BigInt bs) = BigInt (BigAdd' (Rev as) (Rev bs) 0 [])
-BigAdd' as [] 0 acc = Prepend (Rev as) acc
+BigAdd' as [] 0 acc = (Rev as) ++ acc
 BigAdd' as [] carry acc = BigAdd' as [carry] 0 acc
-BigAdd' [] bs 0 acc = Prepend (Rev bs) acc
+BigAdd' [] bs 0 acc = (Rev bs) ++ acc
 BigAdd' [] bs carry acc = BigAdd' [carry] bs 0 acc
 BigAdd' a:as b:bs carry acc =
     let sum = a + b + carry in
     let carry2 = Choice (sum >= 10) 1 0 in
     BigAdd' as bs carry2 ((sum % 10):acc)
+
+-- 0 <= n <= 9
+MultByHelper n as = MultByHelper' (Rev as) n [] 0
+MultByHelper' [] n acc carry = if carry > 0 then carry:acc else acc
+MultByHelper' a:as n acc carry =
+    let p = a * n + carry in
+    MultByHelper' as n ((p % 10):acc) (p / 10)
+
+-- shift and add
+BigMult (BigInt as) (BigInt bs) = BigMult' (Rev as) bs (BigIntOf 0)
+BigMult' [] _ prod = prod
+BigMult' a:as b acc = BigMult' as (b ++ [0]) (BigAdd (BigInt (MultByHelper a b)) acc)

@@ -9,7 +9,7 @@ Lookup x EmptyDict = None
 Lookup x (T (key, val) count l r) =
     if x < key then
         Lookup x l
-    else if x > key then
+    else if key < x then
         Lookup x r
     else
         Some val
@@ -53,7 +53,7 @@ Insert x (T v count l r) =
     else if v < x then
         T' v l (Insert x r)
     else
-        T v count l r
+        T x count l r
 
 ArrayOf lst = ArrayOf' lst EmptyDict 0
 ArrayOf' [] dict i = dict
