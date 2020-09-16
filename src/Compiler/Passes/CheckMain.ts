@@ -10,7 +10,7 @@ export const checkMain: Checker = (rules: Rule[]): CompilationMessage[] => {
         msgs.push(`Main should receive no arguments.`);
     }
 
-    if (rules.length > 1) {
+    if (main.length > 1) {
         msgs.push(`Main should only be defined once.`);
     }
 

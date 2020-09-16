@@ -7,7 +7,7 @@ LatticePaths' w h m None =
     let (b, m3) = LatticePaths w (h - 1) m2 in
     (a + b, ((w, h), a + b):m3)
 
--- use a simple list to store previous results
+-- use a simple list of key - value pairs to store previous results
 FindMemo key memo = MapOption Snd (Find (\(k, v) -> k == key) memo)
 
 Main = Fst (LatticePaths 20 20 [])

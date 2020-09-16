@@ -13,10 +13,12 @@ Or False True = True
 Or True False = True
 Or True True = True
 
+-- definition of a && b
 -- Only evaluates its second argument if necessary
 LazyAnd True b = b ()
 LazyAnd False b = False
 
+-- definition of a || b
 -- Only evaluates its second argument if necessary
 LazyOr True b = True
 LazyOr False b = b ()

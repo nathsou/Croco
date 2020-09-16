@@ -23,17 +23,18 @@ IsDigit c = (c >= CharCode "0") && (c <= CharCode "9")
 
 TrimLeft = DropWhile (== CharCode " ")
 
-Less (String as) (String bs) = StringLess as bs
+-- total order on strings
+(String as) < (String bs) = StringLess as bs
 StringLess [] [] = False
 StringLess _ [] = False
 StringLess [] _ = True
 StringLess a:as b:bs = if a == b then as `StringLess` bs else a < b
 
-Greater (String as) (String bs) = StringGtr as bs
+(String as) > (String bs) = StringGtr as bs
 StringGtr [] [] = False
 StringGtr _ [] = True
 StringGtr [] _ = False
 StringGtr a:as b:bs = if a == b then as `StringGtr` bs else a > b
 
-GreaterEq (String as) (String bs) = Not (as `StringLess` bs)
-LessEq (String as) (String bs) = Not (as `StringGtr` bs)
+(String as) >= (String bs) = Not (as `StringLess` bs)
+(String as) <= (String bs) = Not (as `StringGtr` bs)

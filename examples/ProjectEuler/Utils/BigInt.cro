@@ -25,3 +25,11 @@ MultByHelper' a:as n acc carry =
 BigMult (BigInt as) (BigInt bs) = BigMult' (Rev as) bs (BigIntOf 0)
 BigMult' [] _ prod = prod
 BigMult' a:as b acc = BigMult' as (b ++ [0]) (BigAdd (BigInt (MultByHelper a b)) acc)
+
+-- n must be a regular natural number
+BigPow a 0 = BigInt [1]
+BigPow a n = 
+    if Even n then
+        BigPow (a `BigMult` a) (n / 2)
+    else
+        a `BigMult` (BigPow (a `BigMult` a) ((n - 1) / 2))

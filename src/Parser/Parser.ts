@@ -26,6 +26,8 @@ export const parse = (path: string, importedFiles: string[] = []): Prog => {
     process.chdir(dirname(path));
 
     const lines = putSemiColons(source).replace(/\r?\n|\r/g, '').split(';');
+    // console.log(lines);
+    // return;
     let importsCount = 0;
 
 

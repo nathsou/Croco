@@ -1,4 +1,4 @@
-import { CompilationResult, CompilerPass, Fun, isFun, isSomething, isVar, mapify, Maybe, Ok, Rule, Symb, Term, TRS } from "girafe";
+import { CompilationResult, CompilerPass, Fun, isSomething, isVar, mapify, Maybe, Ok, Rule, Symb, Term, TRS } from "girafe";
 import { uncurry } from './Specialize';
 
 export const removeUnusedFunctions = (startingRule: Symb): CompilerPass => {
@@ -21,10 +21,16 @@ export const removeUnusedFunctions = (startingRule: Symb): CompilerPass => {
 
         // remove unused apps
         if (trs.has('app')) {
-            trs.set('app', trs.get('app').filter(([lhs]) => {
-                const f = getCurriedFunctionName(lhs) as string;
-                return usedRules.has(f);
-            }));
+            const remainingApps = trs.get('app').filter(([lhs]) => {
+                const f = getCurriedFunctionName(lhs);
+                return isSomething(f) && usedRules.has(f);
+            });
+
+            if (remainingApps.length > 0) {
+                trs.set('app', remainingApps);
+            } else {
+                trs.delete('app');
+            }
         }
 
         return Ok(trs);
@@ -41,16 +47,16 @@ const collectUsedRules = (
     apps: Map<Symb, Rule[]>,
     usedRules: Set<Symb> = new Set()
 ): Set<Symb> => {
-    let rules: Rule[];
-
     if (usedRules.has(start)) return;
-    rules = trs.get(start) ?? apps.get(start) ?? [];
+
+    const rules = trs.get(start) ?? apps.get(start) ?? [];
+
     if (rules.length > 0) {
         usedRules.add(start);
     }
 
     for (const [lhs, rhs] of rules) {
-        const symbs: SymbOrApp[] = [];
+        const symbs: string[] = [];
         for (const arg of lhs.args) {
             allSymbs(arg, symbs);
         }
@@ -58,7 +64,7 @@ const collectUsedRules = (
         allSymbs(rhs, symbs);
 
         for (const f of symbs) {
-            collectUsedRules(trs, f.name, apps, usedRules);
+            collectUsedRules(trs, f, apps, usedRules);
         }
     }
 
@@ -80,24 +86,20 @@ const getCurriedFunctionName = (t: Term, depth = 0): Maybe<string> => {
     return t.name;
 };
 
-type SymbOrApp = {
-    type: 'symb' | 'app',
-    name: string
-};
-
 const allSymbs = (
     t: Term,
-    acc: SymbOrApp[] = []
-): SymbOrApp[] => {
+    acc: string[] = []
+): string[] => {
     if (isVar(t)) return acc;
 
     if (t.name === 'app') {
         const f = getCurriedFunctionName(t);
+
         if (isSomething(f)) {
-            acc.push({ type: 'app', name: f });
+            acc.push(f);
         }
     } else {
-        acc.push({ type: 'symb', name: t.name });
+        acc.push(t.name);
     }
 
     for (const arg of t.args) {

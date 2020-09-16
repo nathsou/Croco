@@ -1,5 +1,5 @@
-import { LambdaExpr, Prog, RuleDecl, Term, fun, freeVars, vars, appChain, Var, rev } from "../../Parser/Expr";
 import { uniq } from "girafe";
+import { appChain, freeVars, fun, LambdaExpr, Prog, rev, RuleDecl, Term, Var } from "../../Parser/Expr";
 type L = Term | LambdaExpr;
 
 let lambdasCount = 0;

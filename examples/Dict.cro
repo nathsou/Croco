@@ -44,7 +44,7 @@ TL (T x count ll lr) v l r =
     else
         RotateDoubleRight v l r
 
-Less (k1, v1) (k2, vs) = k1 < k2
+(k1, v1) < (k2, vs) = k1 < k2
 
 Insert x EmptyDict = T x 1 EmptyDict EmptyDict
 Insert x (T v count l r) =

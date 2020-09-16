@@ -1,5 +1,5 @@
 Len (String chars) = Len chars
-Len lst = (Fold (\_ acc -> acc + 1) 0) lst
+Len lst = Fold (\_ acc -> acc + 1) 0 lst
 
 Fold f base (String cs) = String (Fold f base cs)
 Fold f base lst = Fold' f lst base
@@ -44,13 +44,13 @@ Nth 0 [] = None
 Nth 0 h:_ = Some h
 Nth n _:tl = Nth (n - 1) tl
 
-Prepend (String as) (String bs) = String (Prepend as bs)
-Prepend [] bs = bs
-Prepend as bs = Prepend' (Rev as) bs
+(String as) ++ (String bs) = String (Prepend as bs)
+[] ++ bs = bs
+as ++ bs = Prepend' (Rev as) bs
 Prepend' [] bs = bs
 Prepend' a:as bs = Prepend' as (a:bs)
 
-Append as bs = Prepend bs as
+Append as bs = bs ++ as
 
 Zip as bs = Zip' as bs []
 Zip' [] bs acc = Rev acc
@@ -66,10 +66,11 @@ MapPair f (a, b) = (f a, f b)
 
 Partition pred lst = MapPair Rev (PartitionRev pred lst)
 
+-- TODO: Implement a less terrible sorting function
 SortWith cmp [] = []
 SortWith cmp h:tl =
     let (smaller, bigger) = Partition (\n -> cmp n h) tl in
-    (SortWith cmp smaller) `Prepend` (h:(SortWith cmp bigger))
+    (SortWith cmp smaller) ++ (h:(SortWith cmp bigger))
 
 Sort = SortWith (<)
 SortRev = SortWith (>)
@@ -107,7 +108,7 @@ ScanRev' f h:tl acc scan = ScanRev' f tl (f h acc) (acc:scan)
 Find pred lst = Find' pred lst None
 Find' _ _ (Some x) = Some x
 Find' _ [] _ = None
-Find' pred h:tl None = Find' pred tl (if pred h then Some h else None)
+Find' pred h:tl _ = Find' pred tl (if pred h then Some h else None)
 
 SplitAt len lst = SplitAt' len lst []
 SplitAt' 0 lst acc = (Rev acc, lst)
@@ -123,8 +124,10 @@ ChunksRev' len lst chunks =
     
 Chunks len lst = Rev (ChunksRev len lst)
 
-
 -- Slide 2 [1, 2, 3, 4, 5] -> [[1, 2], [2, 3], [3, 4], [4, 5]]
 Slide len lst = let (win, tail) = SplitAt len lst in Slide' win tail []
 Slide' a [] acc = Rev (a:acc)
 Slide' a:as b:bs acc = Slide' (as ++ [b]) bs ((a:as):acc)
+
+Last [l] = l
+Last h:tl = Last tl

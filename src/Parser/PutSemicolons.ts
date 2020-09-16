@@ -1,56 +1,60 @@
-import { isNothing, Maybe, snd, specialCharsSet, Symb } from "girafe";
 
 export const putSemiColons = (source: string): string => {
-    const lines = source.split('\n').filter(line => line.trim() !== '' && !line.trimLeft().startsWith('--'));
-
-    const newLines: string[] = [];
+    const lines = source
+        .split('\n')
+        .filter(line => line.trim() !== '' && !line.trimLeft().startsWith('--'));
 
     for (let i = 0; i < lines.length; i++) {
         const nextLine = lines[i + 1] ?? '';
-        const line = lines[i];
 
-        if (isRuleDefStart(nextLine) || i === lines.length - 1) {
-            newLines.push(line + ';');
-        } else {
-            newLines.push(line);
+        if (
+            isRuleDefStart(nextLine) ||
+            isImportStart(nextLine) ||
+            i === lines.length - 1
+        ) {
+            lines[i] = lines[i] + ';';
         }
     }
 
-    return newLines.join('\n');
+    return lines.join('\n');
 };
 
-const isSpecialChar = (c: string) => specialCharsSet.has(c);
-const isAlphaNum = (c: string) => /[a-zA-Z0-9]/.test(c);
-const isUpperCase = (c: string) => c.toUpperCase() === c;
+const peek = (source: string, index: number, len = 1) => source.substr(index, len);
 
-const lexSymb = (input: string): Maybe<[Symb, string]> => {
-    if (input === '') return;
-    let symb = '';
-
-    const [head, tail] = [input[0], input.slice(1)];
-
-    // first char must be uppercase or a special symbol
-    if (!((isAlphaNum(head) && isUpperCase(head)) || isSpecialChar(head))) {
-        return;
-    }
-
-    symb += head;
-
-    for (const c of tail) {
-        if (c === ' ' || c === '\t') break;
-        if (isAlphaNum(c) || isSpecialChar(c)) {
-            symb += c;
-        } else {
-            return;
+const isImportStart = (line: string): boolean => {
+    for (let i = 0; i < line.length; i++) {
+        if (line[i] === 'i' && peek(line, i, 'import'.length) === 'import') {
+            return true;
         }
     }
 
-    return [symb, input.slice(symb.length)];
+    return false;
 };
 
-const isRuleDefStart = (input: string): boolean => {
-    if (input.trimLeft().startsWith('import')) return true;
-    const s = lexSymb(input);
-    if (isNothing(s)) return false;
-    return snd(s).includes('=');
+// are we in the beginning of a let .. (here) = .. in .. expression?
+let insideLetInt = false;
+let prevChar = ' ';
+
+const isRuleDefStart = (line: string): boolean => {
+    // the '=' symbol can only appear in rule definitions and let .. = .. in .. expressions 
+    for (let i = 0; i < line.length; i++) {
+        if ([' let ', ' let'].includes(prevChar + peek(line, i, 4))) {
+            insideLetInt = true;
+        } else if ([' in', ' in '].includes(prevChar + peek(line, i, 3))) {
+            insideLetInt = false;
+        }
+
+        if (
+            !insideLetInt && // not the '=' of a let .. = .. in .. expression
+            line[i] === '=' &&
+            !['=', '<', '>', '/'].includes(prevChar) &&
+            (line[i + 1] ?? '') !== '=' // do not match '=='
+        ) {
+            return true;
+        }
+
+        prevChar = line[i];
+    }
+
+    return false;
 };
