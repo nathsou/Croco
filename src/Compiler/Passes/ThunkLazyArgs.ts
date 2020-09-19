@@ -1,5 +1,5 @@
 import { CompilationResult, CompilerPass, fun, Fun, indexed, isFun, isVar, map, mapify, Ok, replaceTerms, Rule, rules, ruleVars, Symb, Term, TRS, Var } from "girafe";
-import { croTermOf, grfRuleOf, grfTermOf, LambdaExpr, RuleDecl, Term as CrocoTerm } from "../../Parser/Expr";
+import { croTermOf, grfRuleOf, grfTermOf, LambdaExpr, RuleDecl, Term as CrocoTerm, Unit } from "../../Parser/Expr";
 import { Counter, lift } from "./LiftLambdas";
 
 export const lazySymb = 'Lazy';
@@ -52,7 +52,7 @@ const thunkTerm = (
 
             const thunked: LambdaExpr = {
                 type: 'lambda',
-                x: { type: 'fun', name: 'Unit', args: [] },
+                x: Unit,
                 rhs: croTermOf(thunkedArg)
             };
 
@@ -65,7 +65,8 @@ const thunkTerm = (
     return { name: t.name, args: thunkedArgs };
 };
 
-const Inst = (x: Term) => fun('app', x, fun('Unit'));
+const grfUnit = fun('Unit');
+const Inst = (x: Term) => fun('app', x, grfUnit);
 
 // migrant vars are lazy terms in active position on the rhs
 const callActiveLazyArgs = (rule: Rule, ann: LazinessAnnotations): Rule => {

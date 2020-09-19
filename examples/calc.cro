@@ -1,0 +1,6 @@
+-- import ./Parsing.cro
+
+
+InfList n = n : ?(InfList (n + 1))
+
+Main = Take 100 (InfList 0)

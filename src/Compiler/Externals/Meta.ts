@@ -1,8 +1,8 @@
-import { Externals, ExternalsFactory, False, fun, Fun, NativeExternals, nullaryVarName, Term, termsEq, True } from "girafe";
+import { Externals, ExternalsFactory, False, fun, Fun, isFun, NativeExternals, nullaryVarName, Term, termsEq, True } from "girafe";
 import { postprocessTerm } from "../../Parser/Expr";
 import { CrocoTargets, renameSymb } from "./Externals";
 
-export type CrocoMetaExternals = 'equ' | 'show';
+export type CrocoMetaExternals = 'equ' | 'show' | 'isthunk';
 
 const equ = (s: Term, t: Term): Fun => {
     return termsEq(s, t) ? True : False;
@@ -10,8 +10,11 @@ const equ = (s: Term, t: Term): Fun => {
 
 const nativeMetaExternals: NativeExternals<CrocoMetaExternals> = {
     equ: t => { const [a, b] = t.args; return equ(a, b); },
-    show: t => { console.log(postprocessTerm(t)); return fun('Unit'); }
+    show: t => { console.log(postprocessTerm(t)); return fun('Unit'); },
+    isthunk: t => boolOf(isFun(t.args[0]) && t.args.length > 0 ? t.args[0].name.startsWith('thunk') : false)
 };
+
+const boolOf = (b: boolean) => b ? True : False;
 
 const jsMetaExternals: Externals<'js', CrocoMetaExternals> = {
     equ: name => `
@@ -40,10 +43,7 @@ const jsMetaExternals: Externals<'js', CrocoMetaExternals> = {
 
             const postprocessList = (head, tail, nil = 'Nil', cons = ':') => {
                 if (isVar(tail) || (tail.name !== cons && tail.name !== nil)) {
-                    throw new Error(
-                        'Expected "' + cons + '" or "' + nil + '" at the end of a ' +
-                        nil === 'Nil' ? 'list' : 'tuple' + ', got: ' + JSON.stringify(tail)
-                    );
+                    return ${name}(head) + ', ' + ${name}(tail);
                 }
             
                 if (tail.name === nil) return ${name}(head);
@@ -89,6 +89,14 @@ const jsMetaExternals: Externals<'js', CrocoMetaExternals> = {
                     return '(' + term.name + ' ' + term.args.map(${name}).join(' ') + ')';
             }
         }
+    `,
+    isthunk: name => `
+        function ${name}(t) {
+            if (isVar(t)) return ${nullaryVarName('False')};
+            return t.args[0].name.substr(0, 5) === 'thunk' ?
+                ${nullaryVarName('True')} :
+                ${nullaryVarName('False')};
+        }
     `
 };
 
@@ -100,7 +108,7 @@ const ocamlMetaExternals: Externals<'ocaml', CrocoMetaExternals> = {
         let rec from_list lst acc = match lst with
             | (Fun (":", [h; tl])) -> from_list tl (h::acc)
             | (Fun ("Nil", [])) -> acc
-            | _ -> failwith "Trying to convert an invalid term to a list"
+            | _ -> ${name} head ^ ", " ^ ${name} tail
         in let rec postprocess_list head tail = match tail with
             | (Fun ("Nil", [])) | (Fun ("Unit", [])) -> ${name} head
             | (Fun (":", [h; tl])) | (Fun (";", [h; tl])) -> 
@@ -125,6 +133,11 @@ const ocamlMetaExternals: Externals<'ocaml', CrocoMetaExternals> = {
                 let str = String.concat "" chars in
                 "\\"" ^ str ^ "\\""
             | Fun (f, ts) -> "(" ^ f ^ (String.concat " " (List.map ${name} ts)) ^ ")";;
+        `,
+    isthunk: name => `
+            let ${name} (Fun _ [t]) = match t with
+                | (Var _) -> ${nullaryVarName('False')}
+                | (Fun f _) -> if String.sub f 0 5 == "thunk" then ${nullaryVarName('True')} else ${nullaryVarName('False')};;
         `
 };
 

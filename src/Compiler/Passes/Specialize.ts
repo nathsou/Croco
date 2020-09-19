@@ -141,5 +141,5 @@ const appChainAux = (lhs: Term, args: Term[]): Term => {
     if (args.length === 1) return app(lhs, args[0]);
 
     const [h, tl] = decons(args);
-    return app(appChain(lhs, tl), h);
+    return app(appChainAux(lhs, tl), h);
 };

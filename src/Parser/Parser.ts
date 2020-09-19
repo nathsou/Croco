@@ -60,8 +60,6 @@ export const parse = (path: string, importedFiles: string[] = []): Prog => {
         );
     }
 
-    // console.log(parseRules.results.map(showProg).join('\n\n') + '\n');
-
     // go back to the previous directory
     process.chdir(prevDir);
 

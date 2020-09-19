@@ -36,6 +36,8 @@ export type RuleDecl<E = Expr> = {
     rhs: E
 };
 
+export const Unit: Fun = { type: 'fun', name: 'Unit', args: [] };
+
 export const croTermOf = (t: grfTerm): Term => {
     if (isVar(t)) return varOf(t);
     return { type: 'fun', name: t.name, args: t.args.map(croTermOf) };
@@ -123,7 +125,8 @@ export const postprocessList = (
     cons = ':'
 ): string => {
     if (isVar(tail) || (tail.name !== cons && tail.name !== nil)) {
-        throw new Error(`Expected '${cons}' or '${nil}' at the end of a ${nil === 'Nil' ? 'list' : 'tuple'}, got: ${grfShowterm(tail)}`);
+        return postprocessTerm(head) + ', ' + postprocessTerm(tail);
+        // throw new Error(`Expected '${cons}' or '${nil}' at the end of a ${nil === 'Nil' ? 'list' : 'tuple'}, got: ${grfShowterm(tail)}`);
     }
 
     if (tail.name === nil) return postprocessTerm(head);

@@ -29,10 +29,15 @@ const makeExternalRules = (): Rule[] => {
         fun('app', fun('Not'), fun('@equ', 'a', 'b'))
     ]);
 
+    externalsRules.push([
+        fun('app', fun('IsThunk'), 't'),
+        fun('@isthunk', 't')
+    ]);
+
     return externalsRules;
 };
 
-export const addBinopExternals: CompilerPass = (trs: TRS): CompilationResult => {
+export const addExternals: CompilerPass = (trs: TRS): CompilationResult => {
     addRules(trs, ...makeExternalRules());
     return Ok(trs);
 };

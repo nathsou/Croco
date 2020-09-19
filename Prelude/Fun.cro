@@ -16,5 +16,8 @@ Flip f x y = f y x
 Fix f x = f (Fix f) x
 
 -- if cond then a else b
-IfThenElse True (?a) (?b) = a
-IfThenElse False (?a) (?b) = b
+IfThenElse True (?a) (?_) = a
+IfThenElse False (?_) (?b) = b
+
+-- instantiates a thunk
+Unthunk t = if IsThunk t then t () else t

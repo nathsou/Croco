@@ -3,4 +3,4 @@ Fact = Fix (\f n -> if n == 0 then 1 else n * (f (n - 1)))
 
 Forever = Forever
 
-Main = IfThenElse True (Fact 7) Forever
+Main = IfThenElse False Forever (Fact 7)

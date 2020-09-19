@@ -1,0 +1,37 @@
+
+-- turing machine
+
+Step tr s (Tape h l r) =
+    let (s2, h2, dir) = tr s h in
+    (s2, MoveTape dir (Tape h2 l r))
+
+-- move the tape one step to the right
+MoveTape R (Tape h [] []) = Tape "" [h] []
+MoveTape R (Tape h [] r:rs) = Tape r [h] rs
+MoveTape R (Tape h ls []) = Tape "" h:ls []
+MoveTape R (Tape h ls r:rs) = Tape r h:ls rs
+
+-- move the tape one step to the left
+MoveTape L (Tape h [] []) = Tape "" [] [h]
+MoveTape L (Tape h l:ls []) = Tape l ls [h]
+MoveTape L (Tape h [] rs) = Tape "" [] h:rs
+MoveTape L (Tape h l:ls rs) = Tape l ls h:rs
+
+TapeOfList h:tl = Tape h [] tl
+
+Run tr q0 qf tape = Run' tr (Step tr q0 tape) qf
+Run' _ (qf, (Tape h l r)) qf = l ++ [h] ++ r
+Run' tr (s, (Tape h l r)) qf = Run' tr (Step tr s (Tape h l r)) qf
+
+
+-- transition function to add two unary encoded natural numbers
+Tr S1 "1" = (S1, "1", R)
+Tr S1 "+" = (S2, "1", R)
+Tr S2 "1" = (S2, "1", R)
+Tr S2 "" = (S3, "", L)
+Tr S3 "1" = (S4, "", L)
+Tr S4 "1" = (S4, "1", L)
+Tr S4 "" = (S5, "", R)
+
+-- 3 + 4 = 7
+Main = Run Tr S1 S5 (TapeOfList ["1", "1", "1", "+", "1", "1", "1", "1"])
