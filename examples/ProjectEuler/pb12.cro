@@ -1,5 +1,5 @@
 import ./Utils/Iters.cro
-import ./Utils/Primes.cro
+import ./Utils/NumberTheory.cro
 
 Triangles = ScanIt (+) 0 (NatsFrom 1)
 

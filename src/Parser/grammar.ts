@@ -21,10 +21,15 @@ const lexer = moo.compile({
   let_: 'let',
   in_: 'in',
   any: '_',
+  lazy_op: '?',
   varname: /[a-z]+[a-zA-Z0-9]*/,
-  symb: /[A-Z0-9@][a-zA-Z0-9']*/,
+  symb: /[A-Z0-9][a-zA-Z0-9']*/,
   arrow: '->',
-  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', '/=', ':', '.', '++', '>>', '>>=', '&&', '||'],
+  range_op: '..',
+  binop: [
+    '+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=',
+    '==', '/=', ':', '.', '++', '>>', '>>=', '&&', '||', '.&.', '.|.'
+  ],
   comma: ',',
   assign: '=',
   unit: '()',
@@ -109,6 +114,8 @@ const opMap = {
   '>>=': 'MonadicBind',
   '&&': 'LazyAnd',
   '||': 'LazyOr',
+  '.&.': 'BitwiseAnd',
+  '.|.': 'BitwiseOr'
 };
 
 let underscoresCount = 0;
@@ -155,8 +162,10 @@ const grammar: Grammar = {
         ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
         },
     {"name": "if", "symbols": ["comp"], "postprocess": id},
-    {"name": "comp", "symbols": ["comp", {"literal":"||"}, "app"], "postprocess": ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q))},
-    {"name": "comp", "symbols": ["comp", {"literal":"&&"}, "app"], "postprocess": ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q))},
+    {"name": "comp", "symbols": ["comp", {"literal":".&."}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("BitwiseAnd"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":".|."}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("BitwiseOr"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":"&&"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("And"), as), bs)},
+    {"name": "comp", "symbols": ["comp", {"literal":"||"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("Or"), as), bs)},
     {"name": "comp", "symbols": ["comp", {"literal":"++"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("Prepend"), as), bs)},
     {"name": "comp", "symbols": ["comp", {"literal":">>"}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs)},
     {"name": "comp", "symbols": ["comp", {"literal":">>="}, "app"], "postprocess": ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs)},
@@ -170,8 +179,10 @@ const grammar: Grammar = {
     {"name": "comp", "symbols": ["app"], "postprocess": id},
     {"name": "app", "symbols": ["app", "cons"], "postprocess": ([lhs, rhs]) => App(lhs, rhs)},
     {"name": "app", "symbols": ["cons"], "postprocess": id},
-    {"name": "cons", "symbols": ["list", {"literal":":"}, "cons"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
-    {"name": "cons", "symbols": ["list"], "postprocess": id},
+    {"name": "cons", "symbols": ["range", {"literal":":"}, "cons"], "postprocess": ([h, _, tl]) => Fun(':', h, tl)},
+    {"name": "cons", "symbols": ["range"], "postprocess": id},
+    {"name": "range", "symbols": [{"literal":"["}, "expr", {"literal":".."}, "expr", {"literal":"]"}], "postprocess": d => App(App(Fun("Range"), d[1]), d[3])},
+    {"name": "range", "symbols": ["list"], "postprocess": id},
     {"name": "list", "symbols": [{"literal":"["}, "list_elems", {"literal":"]"}], "postprocess": d => d[1]},
     {"name": "list_elems", "symbols": ["expr"], "postprocess": ([e]) => Fun(':', e, Fun('Nil'))},
     {"name": "list_elems", "symbols": ["expr", {"literal":","}, "list_elems"], "postprocess": ([e, _, es]) => Fun(':', e, es)},
@@ -206,7 +217,9 @@ const grammar: Grammar = {
     {"name": "term", "symbols": ["var"], "postprocess": id},
     {"name": "term", "symbols": [(lexer.has("nil") ? {type: "nil"} : nil)], "postprocess": () => Fun('Nil')},
     {"name": "term", "symbols": [(lexer.has("unit") ? {type: "unit"} : unit)], "postprocess": () => Fun('Unit')},
-    {"name": "term", "symbols": ["paren"], "postprocess": id},
+    {"name": "term", "symbols": ["lazy"], "postprocess": id},
+    {"name": "lazy", "symbols": [{"literal":"?"}, "expr"], "postprocess": ([_, expr]) => Fun("Lazy", expr)},
+    {"name": "lazy", "symbols": ["paren"], "postprocess": id},
     {"name": "paren", "symbols": [{"literal":"("}, "expr", {"literal":")"}], "postprocess": d => d[1]},
     {"name": "var", "symbols": [{"literal":"_"}], "postprocess": () => ({ type: 'var', name: `any_${underscoresCount++}` })},
     {"name": "var", "symbols": [(lexer.has("varname") ? {type: "varname"} : varname)], "postprocess": ([v]) => ({ type: 'var', name: v.value })},

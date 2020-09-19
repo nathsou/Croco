@@ -1,6 +1,20 @@
+-- the identity function
 Id x = x
 
+-- eager version of `if cond then a else b`
 Choice True a _ = a
 Choice False _ b = b
 
-Compose f g = \x -> f (g x)
+-- function composition
+(f . g) x = f (g x)
+
+-- reverse the order of the arguments of f
+Flip f x y = f y x
+
+-- Fixed-point combinator
+-- https://www.wikiwand.com/en/Fixed-point_combinator
+Fix f x = f (Fix f) x
+
+-- if cond then a else b
+IfThenElse True (?a) (?b) = a
+IfThenElse False (?a) (?b) = b

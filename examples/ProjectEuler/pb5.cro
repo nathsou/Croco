@@ -1,4 +1,4 @@
-import ./Utils/Primes.cro
+import ./Utils/NumberTheory.cro
 
 SmallestMultiple m = SmallestMultiple' m 1 2
 SmallestMultiple' m n m = n

@@ -26,10 +26,8 @@ export const parse = (path: string, importedFiles: string[] = []): Prog => {
     process.chdir(dirname(path));
 
     const lines = putSemiColons(source).replace(/\r?\n|\r/g, '').split(';');
-    // console.log(lines);
-    // return;
-    let importsCount = 0;
 
+    let importsCount = 0;
 
     // imports
     for (const line of lines) {
@@ -68,10 +66,6 @@ export const parse = (path: string, importedFiles: string[] = []): Prog => {
     process.chdir(prevDir);
 
     return mergeProgramsMut(importedRules, (parseRules.results ?? [[]])[0]);
-};
-
-export const mergePrograms = (p: Prog, q: Prog): Prog => {
-    return [...p, ...q];
 };
 
 export const mergeProgramsMut = (p: Prog, q: Prog): Prog => {

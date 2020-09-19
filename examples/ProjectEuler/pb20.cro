@@ -1,5 +1,5 @@
 import ./Utils/BigInt.cro
 
-BigFact n = Fold (\m acc -> BigMult (BigIntOf m) acc) (BigIntOf 1) (Range 1 n)
+BigFact n = Fold (\m acc -> (BigIntOf m) * acc) (BigIntOf 1) [1..n]
 
 Main = let BigInt ds = BigFact 100 in Sum ds

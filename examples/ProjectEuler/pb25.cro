@@ -1,0 +1,10 @@
+import ./Utils/Iters.cro
+import ./Utils/BigInt.cro
+
+Fibs = Fibs' (BigIntOf 1) (BigIntOf 1)
+Fibs' a b = It a (NextFib b (a + b))
+Iter (NextFib a b) = Fibs' a b
+
+Main =
+    let Some (idx, _) = FindIt (\(_, BigInt ds) -> Len ds == 1000) (ZipIt (NatsFrom 1) Fibs) in
+    idx

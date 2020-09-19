@@ -4,8 +4,8 @@ MapOption f (Some x) = Some (f x)
 MapOption f lst  = MapOption Rev (MapOptionRev f lst)
 
 MapOptionRev f lst = MapOptionRev' f lst []
-MapOptionRev' _ [] acc = Some acc
 MapOptionRev' _ _ None:_ = None
+MapOptionRev' _ [] acc = Some acc
 MapOptionRev' f h:tl acc = MapOptionRev' f tl (((Unwrap . f) h):acc)
 
 Unwrap (Some x) = x

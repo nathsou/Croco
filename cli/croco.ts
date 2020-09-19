@@ -1,17 +1,19 @@
 import { spawn } from "child_process";
 import { unlinkSync, writeFileSync } from "fs";
-import { fun, JSTranslator, makeNat, nodeWorkerRawNormalizer, OCamlTranslator, showTRS, Targets, translate, TRS } from "girafe";
+import { DecisionTreeNormalizer, fun, JSTranslator, nodeWorkerRawNormalizer, OCamlTranslator, rules, showTRS, Targets, TRS } from "girafe";
 import { compile } from "../src/Compiler/Compiler";
 import { crocoExternals } from "../src/Compiler/Externals/Externals";
+import { postprocessTerm } from "../src/Parser/Expr";
 import { parse } from "../src/Parser/Parser";
 
 const OCAMLC = 'ocamlopt';
+const useNodeWorkers = true;
 
 const printUsage = () => {
     console.info('The inglorious Croco compiler - github.com/nathsou/Croco');
     console.info('---------------------------------------------------------');
-    console.info('interpret: croco src.cro [out]');
-    console.info('compile to intermediate language: croco src.cro [out] [js/ocaml/girafe]');
+    console.info('run: croco src.cro');
+    console.info('compile to target: croco src.cro out js/ocaml/girafe');
     console.info('compile to binary: croco src.cro -c out');
     process.exit(0);
 };
@@ -23,6 +25,7 @@ const src = process.argv[2];
 if (src === undefined) {
     printUsage();
 }
+
 
 const trs = compile(parse(src), externals);
 
@@ -81,18 +84,23 @@ if (process.argv[3] === '-c') {
 } else {
     const [out, target] = process.argv.slice(3);
 
-    const targets = ['js', 'ocaml', 'girafe'];
+    const targets = ['js', 'ocaml', 'girafe', 'json'];
 
-    const transpile = (trs: TRS, target: Targets | 'girafe') => {
-        if (target === 'girafe') {
-            return showTRS(trs);
+    const transpile = (trs: TRS, target: Targets | 'girafe' | 'json') => {
+        switch (target) {
+            case 'girafe':
+                return showTRS(trs);
+            case 'json':
+                return JSON.stringify({
+                    type: 'Girafe json',
+                    version: 0.1,
+                    rules: [...rules(trs)]
+                });
+            case 'js':
+                return new JSTranslator(trs, externals('js')).translate();
+            case 'ocaml':
+                return new OCamlTranslator(trs, externals('ocaml')).translate();
         }
-
-        if (target === 'js') {
-            return new JSTranslator(trs, externals('js'), makeNat).translate();
-        }
-
-        return translate(trs, target, externals);
     };
 
     if (out) {
@@ -111,14 +119,20 @@ if (process.argv[3] === '-c') {
             }
         }
     } else {
-        // const norm = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
-        // console.log(postprocessTerm(norm(fun('Main'))));
-
         if (trs.has('Main')) {
-            const normalize = nodeWorkerRawNormalizer(trs, externals('js'), makeNat);
-            normalize(fun('Main')).then(out => {
-                console.log(out);
-            });
+            try {
+                if (!useNodeWorkers) {
+                    const norm = new DecisionTreeNormalizer(trs).asNormalizer(externals('native'));
+                    console.log(postprocessTerm(norm(fun('Main'))));
+                } else {
+                    const normalize = nodeWorkerRawNormalizer(trs, externals('js'));
+                    normalize(fun('Main')).then(out => {
+                        console.log(out);
+                    });
+                }
+            } catch (e) {
+                throw new Error(`Normalization error: ${e}`);
+            }
         }
     }
 

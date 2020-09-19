@@ -1,0 +1,5 @@
+import ./Utils/NumberTheory.cro
+
+IsAmicable a = let b = ProperDivisorsSum a in a /= b && ProperDivisorsSum b == a
+
+Main = Sum (Filter IsAmicable [1..10000])

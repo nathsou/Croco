@@ -1,0 +1,19 @@
+import ../../Dict.cro
+
+EmptySet = Set EmptyDict
+
+Insert x (Set s) = Set (Insert x s)
+
+SetHas x (Set s) = SetHas' x s
+SetHas' _ EmptyDict = False
+SetHas' x (T v _ l r) =
+    if x < v then
+        SetHas' x l
+    else if v < x then
+        SetHas' x r
+    else
+        True
+
+SetFromList lst = Set (Fold (\x s -> Insert x s) EmptyDict lst)
+
+Traverse (Set s) = Traverse s

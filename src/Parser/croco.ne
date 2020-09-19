@@ -11,10 +11,15 @@ const lexer = moo.compile({
   let_: 'let',
   in_: 'in',
   any: '_',
+  lazy_op: '?',
   varname: /[a-z]+[a-zA-Z0-9]*/,
-  symb: /[A-Z0-9@][a-zA-Z0-9']*/,
+  symb: /[A-Z0-9][a-zA-Z0-9']*/,
   arrow: '->',
-  binop: ['+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=', '==', '/=', ':', '.', '++', '>>', '>>=', '&&', '||'],
+  range_op: '..',
+  binop: [
+    '+', '-', '*', '/', '%', '**', '<', '<=', '>', '>=',
+    '==', '/=', ':', '.', '++', '>>', '>>=', '&&', '||', '.&.', '.|.'
+  ],
   comma: ',',
   assign: '=',
   unit: '()',
@@ -99,6 +104,8 @@ const opMap = {
   '>>=': 'MonadicBind',
   '&&': 'LazyAnd',
   '||': 'LazyOr',
+  '.&.': 'BitwiseAnd',
+  '.|.': 'BitwiseOr'
 };
 
 let underscoresCount = 0;
@@ -125,8 +132,10 @@ if -> "if" expr "then" expr "else" expr {%
 %}
 if -> comp {% id %}
 
-comp -> comp "||"  app {% ([p, _, q]) => App(App(Fun("LazyOr"), p), Lambda([Fun('Unit')], q)) %}
-comp -> comp "&&"  app {% ([p, _, q]) => App(App(Fun("LazyAnd"), p), Lambda([Fun('Unit')], q)) %}
+comp -> comp ".&."  app {% ([as, _, bs]) => App(App(Fun("BitwiseAnd"), as), bs) %}
+comp -> comp ".|."  app {% ([as, _, bs]) => App(App(Fun("BitwiseOr"), as), bs) %}
+comp -> comp "&&"  app {% ([as, _, bs]) => App(App(Fun("And"), as), bs) %}
+comp -> comp "||"  app {% ([as, _, bs]) => App(App(Fun("Or"), as), bs) %}
 comp -> comp "++"  app {% ([as, _, bs]) => App(App(Fun("Prepend"), as), bs) %}
 comp -> comp ">>"  app {% ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs) %}
 comp -> comp ">>=" app {% ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs) %}
@@ -142,8 +151,11 @@ comp -> app {% id %}
 app -> app cons {% ([lhs, rhs]) => App(lhs, rhs) %}
 app -> cons {% id %}
 
-cons -> list ":" cons {% ([h, _, tl]) => Fun(':', h, tl) %}
-cons -> list {% id %}
+cons -> range ":" cons {% ([h, _, tl]) => Fun(':', h, tl) %}
+cons -> range {% id %}
+
+range -> "[" expr ".." expr "]" {% d => App(App(Fun("Range"), d[1]), d[3]) %}
+range -> list {% id %}
 
 list -> "[" list_elems "]" {% d => d[1] %}
 list_elems -> expr {% ([e]) => Fun(':', e, Fun('Nil')) %}
@@ -186,7 +198,10 @@ term -> %symb {% ([s]) => Fun(s.value) %}
 term -> var {% id %}
 term -> %nil {% () => Fun('Nil') %}
 term -> %unit {% () => Fun('Unit') %}
-term -> paren {% id %}
+term -> lazy {% id %}
+
+lazy -> "?" expr {% ([_, expr]) => Fun("Lazy", expr) %}
+lazy -> paren {% id %}
 
 paren -> "(" expr ")" {% d => d[1] %}
 

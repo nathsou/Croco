@@ -32,20 +32,20 @@ const isImportStart = (line: string): boolean => {
 };
 
 // are we in the beginning of a let .. (here) = .. in .. expression?
-let insideLetInt = false;
+let insideLetIn = false;
 let prevChar = ' ';
 
 const isRuleDefStart = (line: string): boolean => {
     // the '=' symbol can only appear in rule definitions and let .. = .. in .. expressions 
     for (let i = 0; i < line.length; i++) {
         if ([' let ', ' let'].includes(prevChar + peek(line, i, 4))) {
-            insideLetInt = true;
+            insideLetIn = true;
         } else if ([' in', ' in '].includes(prevChar + peek(line, i, 3))) {
-            insideLetInt = false;
+            insideLetIn = false;
         }
 
         if (
-            !insideLetInt && // not the '=' of a let .. = .. in .. expression
+            !insideLetIn && // not the '=' of a let .. = .. in .. expression
             line[i] === '=' &&
             !['=', '<', '>', '/'].includes(prevChar) &&
             (line[i + 1] ?? '') !== '=' // do not match '=='

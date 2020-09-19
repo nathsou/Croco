@@ -7,7 +7,7 @@ TakeIt n (It h tl) = h : (TakeIt (n - 1) (Iter tl))
 TakeItAll EmptyIt = []
 TakeItAll (It h tl) = h : (TakeItAll (Iter tl))
 
-TakeItWhile pred EmptyIt = []
+TakeItWhile _ EmptyIt = []
 TakeItWhile pred (It h tl) = if pred h then h : (TakeItWhile pred (Iter tl)) else []
 
 FilterIt pred EmptyIt = EmptyIt
@@ -19,7 +19,7 @@ Iter (NextNat n) = NatsFrom (n + 1)
 
 Nats = NatsFrom 0
 
-RangeIt from to = IterWhile (\n -> n <= to) (NatsFrom from)
+RangeIt from to = IterWhile (<= to) (NatsFrom from)
 
 Next (It h tl) = Iter tl
 
@@ -52,3 +52,18 @@ FindIt pred it = FindIt' pred it None
 FindIt' pred it (Some x) = Some x
 FindIt' pred EmptyIt b = None
 FindIt' pred (It h tl) None = FindIt' pred (Iter tl) (if pred h then Some h else None)
+
+-- joins two iterators together
+JoinIt a EmptyIt = a
+JoinIt EmptyIt b = b
+JoinIt (It h tl) b = It h (NextJoinIt tl b)
+Iter (NextJoinIt a b) = JoinIt (Iter a) b
+
+IterList [] = EmptyIt
+IterList h:tl = It h (NextIterList tl)
+Iter (NextIterList tl) = IterList tl
+
+ZipIt _ EmptyIt = EmptyIt
+ZipIt EmptyIt _ = EmptyIt
+ZipIt (It a as) (It b bs) = It (a, b) (NextZipIt as bs)
+Iter (NextZipIt as bs) = ZipIt (Iter as) (Iter bs)

@@ -4,7 +4,7 @@ DigitsOfStr (String cs) = MapOption DigitOfChar cs
 
 Main = 
     let nums = Map (BigInt . Unwrap . DigitsOfStr) Data in
-    let BigInt ds = Fold BigAdd (BigIntOf 0) nums in
+    let BigInt ds = Fold (+) (BigIntOf 0) nums in
     FromDigits (Take 10 ds)
 
 Data = [

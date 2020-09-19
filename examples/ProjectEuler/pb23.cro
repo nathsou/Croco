@@ -1,0 +1,15 @@
+import ./Utils/NumberTheory.cro
+import ./Utils/Set.cro
+import ./Utils/Iters.cro
+
+UpperLimit = 28123
+
+IsAbundant n = ProperDivisorsSum n > n
+
+IsSumOfTwoAbundantNumbers n sieve sorted =
+    IsSome (FindIt (\m -> SetHas (n - m) sieve) (IterWhile (< n) sorted))
+
+Main =
+    let sieve = SetFromList (Filter IsAbundant [12..UpperLimit]) in
+    let sorted = IterList (Sort (TakeItAll (Traverse sieve))) in
+    Sum (Filter (\n -> Not (IsSumOfTwoAbundantNumbers n sieve sorted)) [1..UpperLimit])

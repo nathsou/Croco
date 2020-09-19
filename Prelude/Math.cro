@@ -2,7 +2,7 @@ Sum = Fold (+) 0
 
 Prod = Fold (*) 1
 
-Divisible a b = (a % b) == 0
+Divisible a b = a % b == 0
 
 Even n = n `Divisible` 2
 Odd n = n % 2 == 1

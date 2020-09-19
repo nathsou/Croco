@@ -11,6 +11,8 @@ const binopExternals = {
     'LessEq': '@leq',
     'Greater': '@gtr',
     'GreaterEq': '@geq',
+    'BitwiseAnd': '@land',
+    'BitwiseOr': '@lor',
     'Cons': ':'
 };
 

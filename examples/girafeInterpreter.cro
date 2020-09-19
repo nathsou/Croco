@@ -38,10 +38,9 @@ Normalize term rules = Normalize' (term, True) rules
 Normalize' (t, True) rules = Normalize' (Reduce t rules) rules
 Normalize' (t, False) rules = t
 
-Show t = Show' t
-Show' (Var x) = x
-Show' (Fun f []) = f
-Show' (Fun f args) = f ++ "(" ++ JoinWith ", " (Map Show args) ++ ")"
+Show (Var x) = x
+Show (Fun f []) = f
+Show (Fun f args) = f ++ "(" ++ JoinWith ", " (Map Show args) ++ ")"
 
 ShowRule (lhs, rhs) = Show lhs ++ " -> " ++ Show rhs
 

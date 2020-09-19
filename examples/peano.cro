@@ -1,16 +1,16 @@
 -- Peano arithmetic
 
-PeanoAdd a 0 = a
-PeanoAdd 0 b = b
-PeanoAdd (S a) b = S (PeanoAdd a b)
-PeanoAdd a (S b) = S (PeanoAdd a b)
+a + 0 = a
+0 + b = b
+(S a) + b = S (a + b)
+a + (S b) = S (a + b)
 
-PeanoMult a 0 = 0
-PeanoMult 0 b = 0
-PeanoMult (S a) b = PeanoAdd (PeanoMult a b) b
-PeanoMult a (S b) = PeanoAdd (PeanoMult a b) a
+a * 0 = 0
+0 * b = 0
+(S a) * b = a * b + b
+a * (S b) = a * b + a
 
 Nat 0 = 0
 Nat n = S (Nat (n - 1))
 
-Main = PeanoMult (Nat 3) (Nat 7)
+Main = (Nat 3) * (Nat 7)

@@ -4,7 +4,9 @@ BigIntDigits (BigInt ds) = ds
 
 FromBigInt (BigInt ds) = FromDigits ds
 
-BigAdd (BigInt as) (BigInt bs) = BigInt (BigAdd' (Rev as) (Rev bs) 0 [])
+StringOfBigInt (BigInt ds) = Join (Map CharOfDigit ds)
+
+(BigInt as) + (BigInt bs) = BigInt (BigAdd' (Rev as) (Rev bs) 0 [])
 BigAdd' as [] 0 acc = (Rev as) ++ acc
 BigAdd' as [] carry acc = BigAdd' as [carry] 0 acc
 BigAdd' [] bs 0 acc = (Rev bs) ++ acc
@@ -22,14 +24,18 @@ MultByHelper' a:as n acc carry =
     MultByHelper' as n ((p % 10):acc) (p / 10)
 
 -- shift and add
-BigMult (BigInt as) (BigInt bs) = BigMult' (Rev as) bs (BigIntOf 0)
+(BigInt as) * (BigInt bs) =
+     -- make sure the "longest" number is on the rhs
+    let (l, r) = if Len as > Len bs then (bs, as) else (as, bs) in
+    BigMult' (Rev l) r (BigIntOf 0)
+
 BigMult' [] _ prod = prod
-BigMult' a:as b acc = BigMult' as (b ++ [0]) (BigAdd (BigInt (MultByHelper a b)) acc)
+BigMult' a:as b acc = BigMult' as (b ++ [0]) ((BigInt (MultByHelper a b)) + acc)
 
 -- n must be a regular natural number
 BigPow a 0 = BigInt [1]
 BigPow a n = 
     if Even n then
-        BigPow (a `BigMult` a) (n / 2)
+        (a * a) `BigPow` (n / 2)
     else
-        a `BigMult` (BigPow (a `BigMult` a) ((n - 1) / 2))
+        a * ((a * a) `BigPow` ((n - 1) / 2))

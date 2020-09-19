@@ -1,7 +1,7 @@
 -- from http://groups.csail.mit.edu/mac/users/adams/BB/
 
 Size EmptyDict = 0
-Size (T v count l r) = count
+Size (T _ count _ _) = count
 
 N v l r = T v (1 + (Size l) + (Size r)) l r
 
@@ -55,6 +55,11 @@ Insert x (T v count l r) =
     else
         T x count l r
 
+-- TODO: Traverse in ascending order of keys
+Traverse EmptyDict = EmptyIt
+Traverse (T v _ l r) = It v (NextTraverse l r)
+Iter (NextTraverse l r) = (Traverse l) `JoinIt` (Traverse r)
+ 
 ArrayOf lst = ArrayOf' lst EmptyDict 0
 ArrayOf' [] dict i = dict
 ArrayOf' (h:tl) dict i = ArrayOf' tl (Insert (i, h) dict) (i + 1)

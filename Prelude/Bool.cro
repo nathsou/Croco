@@ -1,24 +1,24 @@
 Not True = False
 Not False = True
 
--- Eager version of &&
-And False False = False
-And False True = False
-And True False = False
-And True True = True
-
--- Eager version of ||
-Or False False = False
-Or False True = True
-Or True False = True
-Or True True = True
-
 -- definition of a && b
 -- Only evaluates its second argument if necessary
-LazyAnd True b = b ()
-LazyAnd False b = False
+And True ?b = b
+And False ?_ = False
 
 -- definition of a || b
 -- Only evaluates its second argument if necessary
-LazyOr True b = True
-LazyOr False b = b ()
+Or True ?_ = True
+Or False ?b = b
+
+-- Eager version of &&
+EagerAnd False False = False
+EagerAnd False True = False
+EagerAnd True False = False
+EagerAnd True True = True
+
+-- Eager version of ||
+EagerOr False False = False
+EagerOr False True = True
+EagerOr True False = True
+EagerOr True True = True

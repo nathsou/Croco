@@ -6,13 +6,12 @@ A simple purely functional programming language which compiles down to
 ## Usage
 
 ```bash
-$ interpret: croco src.cro [out]
-$ compile to intermediate language: croco src.cro [out] [js/haskell/ocaml/girafe]
+$ run: croco src.cro [out]
+$ compile to intermediate language: croco src.cro out js/ocaml/girafe
 $ compile to binary: croco src.cro -c out
 ```
 
 ### Todo
 
-- [ ] support importing girafe files
 - [ ] support laziness
 - [ ] IO

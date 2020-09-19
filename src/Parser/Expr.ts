@@ -36,9 +36,22 @@ export type RuleDecl<E = Expr> = {
     rhs: E
 };
 
+export const croTermOf = (t: grfTerm): Term => {
+    if (isVar(t)) return varOf(t);
+    return { type: 'fun', name: t.name, args: t.args.map(croTermOf) };
+};
+
 export const grfTermOf = (t: Term): grfTerm => {
     if (t.type === 'var') return t.name;
     return { name: t.name, args: t.args.map(grfTermOf) };
+};
+
+export const croRuleOf = ([lhs, rhs]: grfRule): RuleDecl => {
+    return {
+        type: 'rule',
+        lhs: croTermOf(lhs),
+        rhs: croTermOf(rhs)
+    };
 };
 
 export const grfRuleOf = (rule: RuleDecl<Term>): grfRule => {

@@ -1,10 +1,10 @@
-import ./ProjectEuler/Utils/Primes.cro
+import ./ProjectEuler/Utils/NumberTheory.cro
 import ./ProjectEuler/Utils/Rand.cro
 import ./ProjectEuler/Utils/BigInt.cro
 import ./Dict.cro
 
 RUNS = 500
-SEED = 1783
+SEED = 1621
 
 -- Check that `Divisors` gives the correct number of divisors
 TestDivisors = 
@@ -14,15 +14,20 @@ TestDivisors =
 -- Check that `BigAdd` works as expected
 TestBigAdd = 
     let rnds = Chunks 2 (Rands (2 * RUNS) SEED) in
-    All (\[a, b] -> BigAdd (BigIntOf a) (BigIntOf b) == BigIntOf (a + b)) rnds
+    All (\[a, b] -> (BigIntOf a) + (BigIntOf b) == BigIntOf (a + b)) rnds
+
+-- Check that `BigMult` works as expected
+TestBigMult = 
+    let rnds = Chunks 2 (Map (% 100000) (Rands (2 * RUNS) SEED)) in
+    All (\[a, b] -> (BigIntOf a) * (BigIntOf b) == BigIntOf (a * b)) rnds
 
 -- Check that dictionnary lookup works as expected
 -- with integer keys
 TestDict =
     let rnds = Map (% 10000) (Rands RUNS SEED) in
     let arr = ArrayOf rnds in
-    let idxWithVals = Zip (Range 0 (RUNS - 1)) rnds in
-    All (\(i, val) -> (Lookup i arr) == (Some val)) idxWithVals
+    let idxWithVals = Zip [0..(RUNS - 1)] rnds in
+    All (\(i, val) -> Lookup i arr == Some val) idxWithVals
 
 -- with string keys
 TestDict2 = 
@@ -31,7 +36,7 @@ TestDict2 =
     All (\k -> (Some k == Lookup k dict)) keys
 
 Main =  
-    if All Id [TestDivisors, TestBigAdd, TestDict, TestDict2] then
+    if All Id [TestDivisors, TestBigAdd, TestBigMult, TestDict, TestDict2] then
         "Everything is fine"
     else 
         "Something went wrong"

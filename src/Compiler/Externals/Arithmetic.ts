@@ -32,7 +32,7 @@ const boolbinop = (t: Fun, op: (a: number, b: number) => boolean): Fun => {
 };
 
 export type CrocoArithmeticExternals = 'add' | 'sub' | 'mult' | 'div' |
-    'mod' | 'gtr' | 'geq' | 'lss' | 'leq';
+    'mod' | 'gtr' | 'geq' | 'lss' | 'leq' | 'land' | 'lor';
 
 const nativeArithmeticExternals: NativeExternals<CrocoArithmeticExternals> = {
     'add': t => arithbinop(t, (a, b) => a + b),
@@ -40,6 +40,8 @@ const nativeArithmeticExternals: NativeExternals<CrocoArithmeticExternals> = {
     'mult': t => arithbinop(t, (a, b) => a * b),
     'div': t => arithbinop(t, (a, b) => a / b),
     'mod': t => arithbinop(t, (a, b) => a % b),
+    'land': t => arithbinop(t, (a, b) => a & b),
+    'lor': t => arithbinop(t, (a, b) => a | b),
     'gtr': t => boolbinop(t, (a, b) => a > b),
     'geq': t => boolbinop(t, (a, b) => a >= b),
     'lss': t => boolbinop(t, (a, b) => a < b),
@@ -68,6 +70,8 @@ const jsArithmeticExternals: Externals<'js', CrocoArithmeticExternals> = {
     'mult': jsarithbinop('*'),
     'div': jsarithbinop('/'),
     'mod': jsarithbinop('%'),
+    'land': jsarithbinop('&'),
+    'lor': jsarithbinop('|'),
     'gtr': jsboolbinop('>'),
     'geq': jsboolbinop('>='),
     'lss': jsboolbinop('<'),
@@ -89,6 +93,8 @@ const ocamlArithmeticExternals: Externals<'ocaml', CrocoArithmeticExternals> = {
     "mult": ocamlIntBinop('*'),
     "mod": ocamlIntBinop('mod'),
     "div": ocamlIntBinop('/'),
+    "land": ocamlIntBinop('land'),
+    "lor": ocamlIntBinop('lor'),
     "lss": ocamlBoolBinop('<'),
     "leq": ocamlBoolBinop('<='),
     "gtr": ocamlBoolBinop('>'),

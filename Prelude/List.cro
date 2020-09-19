@@ -12,9 +12,9 @@ Map f lst = Rev (MapRev f lst)
 FilterRev pred = Fold (\h acc -> if pred h then h:acc else acc) []
 Filter pred lst = Rev (FilterRev pred lst)
 
-Rev = Fold (\h acc -> h:acc) []
+Rev = Fold (:) []
 
-Range from to = Range' from to [] (from == to)
+[from..to] = Range' from to [] (from == to)
 Range' from to rng True = rng
 Range' from to acc False = Range' from (to - 1) (to : acc) (from == to)
 
@@ -50,6 +50,7 @@ as ++ bs = Prepend' (Rev as) bs
 Prepend' [] bs = bs
 Prepend' a:as bs = Prepend' as (a:bs)
 
+-- Append = Commute (++)
 Append as bs = bs ++ as
 
 Zip as bs = Zip' as bs []
@@ -131,3 +132,6 @@ Slide' a:as b:bs acc = Slide' (as ++ [b]) bs ((a:as):acc)
 
 Last [l] = l
 Last h:tl = Last tl
+
+-- Concat = Fold Append []
+Concat lst = Rev (Fold (\a acc -> (Rev a) ++ acc) [] lst)
