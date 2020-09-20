@@ -14,6 +14,10 @@ RandInt min max seed = min + (NextRand seed) % (max - min)
 
 RandString seed = RandStringOfLen (RandInt 0 20 seed) seed
 
+RandElem elems seed = 
+    let idx = RandInt 0 ((Len elems) - 1) seed in
+    Unwrap (Nth idx elems)
+
 RandStringOfLen len seed = RandStringOfLen' len seed []
 RandStringOfLen' 0 _ acc = String acc
 RandStringOfLen' len seed acc =

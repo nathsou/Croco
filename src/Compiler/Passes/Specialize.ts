@@ -1,5 +1,6 @@
 import { Arities, arity, CompilationResult, CompilerPass, decons, fun, Fun, isFun, isVar, mapify, Ok, Rule, showTerm, Symb, Term, TRS, Var } from "girafe";
 import { rev } from "../../Parser/Expr";
+import { collectLazySymbsFromRule, lazySymb } from "./ThunkLazyArgs";
 
 // Creates intermediate rules for partially applied functions
 export const specializePartialFunctions: CompilerPass = (trs: TRS): CompilationResult => {
@@ -10,6 +11,10 @@ export const specializePartialFunctions: CompilerPass = (trs: TRS): CompilationR
     for (const [f, rules] of uncurried.entries()) {
         const ar = arity(rules);
         arities.set(f, ar);
+        const ann = rules.reduce((ann, r) =>
+            collectLazySymbsFromRule(r, ann),
+            new Map<Symb, number[]>()
+        ).get(f) ?? [];
 
         const f_ = `${f}_${ar}`;
 
@@ -26,16 +31,19 @@ export const specializePartialFunctions: CompilerPass = (trs: TRS): CompilationR
                 newRules.push([fun(f_, ...lhs.args), rhs]);
             }
 
-            const vs: Var[] = [];
+            const args: Term[] = [];
 
             // add terms for partial applications
             for (let n = 0; n < ar; n++) {
+                // preserve laziness
+                const newArg = ann.includes(n) ? fun(lazySymb, `v${n}`) : `v${n}`;
+
                 newRules.push([
-                    fun('app', fun(`${f}${n === 0 ? '' : `_${n}`}`, ...vs), `v${n}`),
-                    fun(`${f}_${n + 1}`, ...vs, `v${n}`)
+                    fun('app', fun(`${f}${n === 0 ? '' : `_${n}`}`, ...args), newArg),
+                    fun(`${f}_${n + 1}`, ...args, newArg)
                 ]);
 
-                vs.push(`v${n}`);
+                args.push(newArg);
             }
         }
 

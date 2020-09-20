@@ -57,11 +57,9 @@ ParseArgs2 =
 ParseFun = ParseFun2 `Alt` ParseFun1
 ParseFun1 = MapParser (\f -> Fun f []) ParseSymb
 ParseFun2 =
-    MapParser (\((f, args), p) -> Fun f args)
-    (((\_ -> MapParser Fst (ParseSymb `Then` (ParseChar "("))))
-        `LazyThen`
-        (\_ -> ParseArgs))
-        `Then` (ParseChar ")")
+    let mapper = MapParser (\((f, args), p) -> Fun f args) in
+    let parser = ((MapParser Fst (ParseSymb `Then` (ParseChar "("))) `Then` ParseArgs) `Then` (ParseChar ")") in
+    mapper parser
 
 ParseVar = MapParser (\(c, cs) -> Var (Join [c, cs])) (ParseLowerCase `Then` ParseAlphaNums)
 

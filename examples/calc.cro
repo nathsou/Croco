@@ -1,6 +1,36 @@
--- import ./Parsing.cro
+import ./Parsing.cro
 
+-- calculator supporting +, -, *, /, ** and parentheses
 
-InfList n = n : ?(InfList (n + 1))
+ParseNat = MapParser (Unwrap . IntOfString . Join) (Many ParseDigit)
 
-Main = Take 100 (InfList 0)
+Binop op parser = (MapParser (\(a, (_, b)) -> op a b)) parser
+
+ParseAdd = (ParseAdd1 `Alt` ParseAdd2) `Alt` ParseAdd3
+ParseAdd1 = (Binop (+)) (ParseMult `Then` ((ParseChar "+") `Then` ParseAdd))
+ParseAdd2 = (Binop (-)) (ParseMult `Then` ((ParseChar "-") `Then` ParseAdd))
+ParseAdd3 = ParseMult
+
+ParseMult = (ParseMult1 `Alt` ParseMult2) `Alt` ParseMult3
+ParseMult1 = (Binop (*)) (ParsePow `Then` ((ParseChar "*") `Then` ParseMult))
+ParseMult2 = (Binop (/)) (ParsePow `Then` ((ParseChar "/") `Then` ParseMult))
+ParseMult3 = ParsePow
+
+ParsePow = ParsePow1 `Alt` ParseParens
+ParsePow1 = (Binop (**)) (ParseParens `Then` ((ParseString "**") `Then` ParsePow))
+
+ParseParens = ParseParens1 `Alt` ParseNat
+ParseParens1 = MapParser (\(_, (expr, _)) -> expr) ((ParseChar "(") `Then` (ParseExpr `Then` (ParseChar ")")))
+
+ParseExpr = ParseAdd
+
+RemoveSpaces = Filter (/= CharCode " ")
+
+Calc str =
+    let (res, rem) = (Unwrap . ParseExpr . RemoveSpaces) str in
+    if rem /= "" then
+        ParseError rem
+    else
+        res
+
+Main = Calc "(3 * (17 + 2) * 9 - 1) / (6 + 2)"

@@ -2,6 +2,7 @@ import ./ProjectEuler/Utils/NumberTheory.cro
 import ./ProjectEuler/Utils/Rand.cro
 import ./ProjectEuler/Utils/BigInt.cro
 import ./Dict.cro
+import ./calc.cro
 
 RUNS = 500
 SEED = 1621
