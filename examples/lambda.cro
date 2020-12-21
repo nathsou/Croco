@@ -1,3 +1,4 @@
+-- Evaluator for a basic extension of the lambda calculus
 
 LookupEnv x env = Unwrap (MapOption Snd (Find (\(k, v) -> k == x) env))
 

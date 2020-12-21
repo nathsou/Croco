@@ -1,3 +1,4 @@
+-- Simple stack-based virtual machine evaluator
 
 Exec stack (PUSH x):tl = Exec x:stack tl
 Exec _:stack POP:tl = Exec stack tl
