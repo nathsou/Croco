@@ -1,7 +1,10 @@
 import ./Parsing.cro
 import ./Dict.cro
 
--- Martelli and Montanari's term unification algorithm
+-- an interpreter for the Girafe language: https://github.com/nathsou/Girafe
+-- which croco compiles to
+
+-- Martelli and Montanari's term unification algorithm (Modified to be directed)
 Unify s t = Unify' [(s, t)] []
 Unify' [] subst = Some subst
 Unify' (Var a, Var a):ts subst = Unify' ts subst
@@ -44,7 +47,7 @@ Show (Fun f args) = f ++ "(" ++ JoinWith ", " (Map Show args) ++ ")"
 
 ShowRule (lhs, rhs) = Show lhs ++ " -> " ++ Show rhs
 
-ParseSymb = MapParser (\(h, tl) -> Join [h, tl]) (((ParseUpperCase `Alt` ParseDigit) `Then` ParseAlphaNums))
+ParseSymb = MapParser (\(h, tl) -> Join [h, tl]) (ParseUpperCase `Alt` ParseDigit `Then` ParseAlphaNums)
 
 ParseTerm = ParseFun `Alt` ParseVar
 

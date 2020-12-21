@@ -15,18 +15,18 @@ ParseString (String c:cs) = ParseString' cs (ParseChar (String [c]))
 ParseString' [] acc = acc
 ParseString' c:cs acc = ParseString' cs (acc `Then` (ParseChar (String [c])))
 
-Then (?fst) (?snd) cs = Then' (fst cs) snd
-Then' None _ = None
-Then' (Some (r, rem1)) snd = Then'' (snd rem1) r
+Then fst? snd? cs = Then' (fst cs) snd
+Then' None _? = None
+Then' (Some (r, rem1)) snd? = Then'' (snd rem1) r
 Then'' None _ = None
 Then'' (Some (s, rem2)) r = Some ((r, s), rem2)
 
-Alt (?fst) (?snd) cs = Alt' (fst cs) snd cs
-Alt' None snd cs = snd cs
-Alt' (Some res) snd cs = Some res
+Alt fst? snd? cs = Alt' (fst cs) snd cs
+Alt' None snd? cs = snd cs
+Alt' (Some res) snd? cs = Some res
 
-ParseLowerCase = Satisfy (\c -> (c >= CharCode "a") && (c <= CharCode "z"))
-ParseUpperCase = Satisfy (\c -> (c >= CharCode "A") && (c <= CharCode "Z"))
+ParseLowerCase = Satisfy (\c -> c >= CharCode "a" && c <= CharCode "z")
+ParseUpperCase = Satisfy (\c -> c >= CharCode "A" && c <= CharCode "Z")
 
 ParseLetter = ParseLowerCase `Alt` ParseUpperCase
 ParseLetters = MapParser Join (Many ParseLetter)

@@ -4,23 +4,21 @@ import ./Parsing.cro
 
 ParseNat = MapParser (Unwrap . IntOfString . Join) (Many ParseDigit)
 
-Binop op parser = (MapParser (\(a, (_, b)) -> op a b)) parser
+Binop op parser = (MapParser (\((a, _), b) -> op a b)) parser
 
-ParseAdd = (ParseAdd1 `Alt` ParseAdd2) `Alt` ParseAdd3
-ParseAdd1 = (Binop (+)) (ParseMult `Then` ((ParseChar "+") `Then` ParseAdd))
-ParseAdd2 = (Binop (-)) (ParseMult `Then` ((ParseChar "-") `Then` ParseAdd))
-ParseAdd3 = ParseMult
+ParseAdd = ParseAdd1 `Alt` ParseAdd2 `Alt` ParseMult
+ParseAdd1 = (Binop (+)) (ParseMult `Then` (ParseChar "+") `Then` ParseAdd)
+ParseAdd2 = (Binop (-)) (ParseMult `Then` (ParseChar "-") `Then` ParseAdd)
 
-ParseMult = (ParseMult1 `Alt` ParseMult2) `Alt` ParseMult3
-ParseMult1 = (Binop (*)) (ParsePow `Then` ((ParseChar "*") `Then` ParseMult))
-ParseMult2 = (Binop (/)) (ParsePow `Then` ((ParseChar "/") `Then` ParseMult))
-ParseMult3 = ParsePow
+ParseMult = ParseMult1 `Alt` ParseMult2 `Alt` ParsePow
+ParseMult1 = (Binop (*)) (ParsePow `Then` (ParseChar "*") `Then` ParseMult)
+ParseMult2 = (Binop (/)) (ParsePow `Then` (ParseChar "/") `Then` ParseMult)
 
 ParsePow = ParsePow1 `Alt` ParseParens
-ParsePow1 = (Binop (**)) (ParseParens `Then` ((ParseString "**") `Then` ParsePow))
+ParsePow1 = (Binop (**)) (ParseParens `Then` (ParseString "**") `Then` ParsePow)
 
 ParseParens = ParseParens1 `Alt` ParseNat
-ParseParens1 = MapParser (\(_, (expr, _)) -> expr) ((ParseChar "(") `Then` (ParseExpr `Then` (ParseChar ")")))
+ParseParens1 = MapParser (\((_, expr), _) -> expr) ((ParseChar "(") `Then` ParseExpr `Then` (ParseChar ")"))
 
 ParseExpr = ParseAdd
 

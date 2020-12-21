@@ -130,12 +130,14 @@ let_in -> if {% id %}
 if -> "if" expr "then" expr "else" expr {% 
 ([if_, cond, then_, thenExpr, else_, elseExpr]) => Fun('if', cond, thenExpr, elseExpr)
 %}
-if -> comp {% id %}
+if -> logical {% id %}
+
+logical -> logical "&&"  comp {% ([as, _, bs]) => App(App(Fun("And"), as), bs) %}
+logical -> logical "||"  comp {% ([as, _, bs]) => App(App(Fun("Or"), as), bs) %}
+logical -> comp {% id %}
 
 comp -> comp ".&."  app {% ([as, _, bs]) => App(App(Fun("BitwiseAnd"), as), bs) %}
 comp -> comp ".|."  app {% ([as, _, bs]) => App(App(Fun("BitwiseOr"), as), bs) %}
-comp -> comp "&&"  app {% ([as, _, bs]) => App(App(Fun("And"), as), bs) %}
-comp -> comp "||"  app {% ([as, _, bs]) => App(App(Fun("Or"), as), bs) %}
 comp -> comp "++"  app {% ([as, _, bs]) => App(App(Fun("Prepend"), as), bs) %}
 comp -> comp ">>"  app {% ([as, _, bs]) => App(App(Fun("MonadicThen"), as), bs) %}
 comp -> comp ">>=" app {% ([as, _, bs]) => App(App(Fun("MonadicBind"), as), bs) %}
@@ -167,7 +169,7 @@ tuple_elems -> expr "," expr {% ([a, _, b]) => Fun(';', a, Fun(';', b, Fun('Unit
 tuple_elems -> expr "," tuple_elems {% ([e, _, es]) => Fun(';', e, es) %}
 tuple -> custom_op {% id %}
 
-custom_op -> custom_op %backtick %symb %backtick expr {% d => App(App(Fun(d[2].value), d[0]), d[4]) %}
+custom_op -> custom_op %backtick %symb %backtick addsub {% d => App(App(Fun(d[2].value), d[0]), d[4]) %}
 custom_op -> addsub {% id %}
 
 addsub -> addsub "+" multdiv {% ([a, _, b]) => App(App(Fun("Add"), a), b) %}
@@ -200,7 +202,8 @@ term -> %nil {% () => Fun('Nil') %}
 term -> %unit {% () => Fun('Unit') %}
 term -> lazy {% id %}
 
-lazy -> "?" expr {% ([_, expr]) => Fun("Lazy", expr) %}
+lazy -> term "?" {% ([t, _]) => Fun("Lazy", t) %}
+lazy -> "(" expr ")" "?" {% d => Fun("Lazy", d[1]) %}
 lazy -> paren {% id %}
 
 paren -> "(" expr ")" {% d => d[1] %}

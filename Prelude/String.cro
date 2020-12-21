@@ -1,8 +1,8 @@
 Chars (String str) = str
 CharCode (String [c]) = c
 
-ToUpper = Map (\c -> if (c >= 97) && (c <= 122) then c - 32 else c)
-ToLower = Map (\c -> if (c >= 65) && (c <= 90) then c + 32 else c)
+ToUpper = Map (\c -> if c >= 97 && c <= 122 then c - 32 else c)
+ToLower = Map (\c -> if c >= 65 && c <= 90 then c + 32 else c)
 
 Join lst = Fold (++) "" (Rev lst)
 

@@ -108,7 +108,7 @@ const ocamlMetaExternals: Externals<'ocaml', CrocoMetaExternals> = {
         let rec from_list lst acc = match lst with
             | (Fun (":", [h; tl])) -> from_list tl (h::acc)
             | (Fun ("Nil", [])) -> acc
-            | _ -> ${name} head ^ ", " ^ ${name} tail
+            | _ -> failwith "expected : or ; in list / tuple"
         in let rec postprocess_list head tail = match tail with
             | (Fun ("Nil", [])) | (Fun ("Unit", [])) -> ${name} head
             | (Fun (":", [h; tl])) | (Fun (";", [h; tl])) -> 
@@ -135,9 +135,9 @@ const ocamlMetaExternals: Externals<'ocaml', CrocoMetaExternals> = {
             | Fun (f, ts) -> "(" ^ f ^ (String.concat " " (List.map ${name} ts)) ^ ")";;
         `,
     isthunk: name => `
-            let ${name} (Fun _ [t]) = match t with
+            let ${name} (Fun (_, [t])) = match t with
                 | (Var _) -> ${nullaryVarName('False')}
-                | (Fun f _) -> if String.sub f 0 5 == "thunk" then ${nullaryVarName('True')} else ${nullaryVarName('False')};;
+                | (Fun (f, _)) -> if String.sub f 0 5 == "thunk" then ${nullaryVarName('True')} else ${nullaryVarName('False')};;
         `
 };
 

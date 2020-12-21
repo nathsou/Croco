@@ -1,0 +1,33 @@
+
+Exec stack (PUSH x):tl = Exec x:stack tl
+Exec _:stack POP:tl = Exec stack tl
+Exec b:a:stack ADD:tl = Exec (a + b):stack tl
+Exec b:a:stack MUL:tl = Exec (a * b):stack tl
+Exec b:a:stack SUB:tl = Exec (a - b):stack tl
+Exec b:a:stack DIV:tl = Exec (a / b):stack tl
+Exec b:a:stack MOD:tl = Exec (a % b):stack tl
+Exec lst:stack CALL:tl = Exec ((Exec [] lst) ++ stack) tl
+Exec b:a:stack GTR:tl = Exec (a > b):stack tl
+Exec b:a:stack LSS:tl = Exec (a < b):stack tl
+Exec b:a:stack GEQ:tl = Exec (a >= b):stack tl
+Exec b:a:stack LEQ:tl = Exec (a <= b):stack tl
+Exec b:a:stack EQU:tl = Exec (a == b):stack tl
+Exec b:a:stack NEQ:tl = Exec (a /= b):stack tl
+Exec stack (CPY n):tl = Exec ((Slice 0 n stack) ++ stack) tl
+Exec cond:e:t:stack CHOOSE:tl = Exec (if cond then t else e):stack tl
+Exec stack [] = stack
+Exec stack h:_ = UnknownInst h
+
+Compile (Plus a b) = (Compile a) ++ (Compile b) ++ [ADD]
+Compile (Times a b) = (Compile a) ++ (Compile b) ++ [MUL]
+Compile (Minus a b) = (Compile a) ++ (Compile b) ++ [SUB]
+Compile (IntDiv a b) = (Compile a) ++ (Compile b) ++ [DIV]
+Compile (Modulo a b) = (Compile a) ++ (Compile b) ++ [MOD]
+Compile (Eq a b) = (Compile a) ++ (Compile b) ++ [EQU]
+Compile (Neq a b) = [PUSH a, PUSH b, NEQ]
+Compile (If cond t e) = [PUSH (Compile t), PUSH (Compile e), PUSH (Compile cond), CALL, CHOOSE, CALL]
+Compile n = [PUSH n]
+
+Prog = Compile (If ((3 `Times` 7) `Eq` 21) (732 `Plus` 11) 2)
+
+Main = Exec [] Prog

@@ -1,0 +1,55 @@
+
+LookupEnv x env = Unwrap (MapOption Snd (Find (\(k, v) -> k == x) env))
+
+ClosureOf (ClosureRecVal f x body env) =
+    let recVal = ClosureRecVal f x body env in
+    Closure x body (f, recVal):env
+ClosureOf (Closure x body env) = Closure x body env
+
+Eval (Const x) _ = x
+Eval (Plus a b) env = (Eval a env) + (Eval b env)
+Eval (Times a b) env = (Eval a env) * (Eval b env)
+Eval (Minus a b) env = (Eval a env) - (Eval b env)
+Eval (IntDiv a b) env = (Eval a env) / (Eval b env)
+Eval (Modulo a b) env = (Eval a env) % (Eval b env)
+Eval (Eq a b) env = (Eval a env) == (Eval b env)
+Eval (Neq a b) env = (Eval a env) /= (Eval b env)
+Eval (Gtr a b) env = (Eval a env) > (Eval b env)
+Eval (Lss a b) env = (Eval a env) < (Eval b env)
+Eval (Leq a b) env = (Eval a env) <= (Eval b env)
+Eval (Geq a b) env = (Eval a env) >= (Eval b env)
+Eval (LogicalOr a b) env = (Eval a env) || (Eval b env)
+Eval (LogicalAnd a b) env = (Eval a env) && (Eval b env)
+Eval (LogicalNot q) env = Not (Eval q env)
+Eval (Var x) env = LookupEnv x env
+Eval (LetIn x val e) env = Eval e (x, Eval val env):env
+Eval (LetRecIn f x body e) env = 
+    let recVal = ClosureRecVal f x body env in
+    Eval e (f, recVal):env
+Eval (If cond t e) env = if (Eval cond env) then (Eval t env) else (Eval e env)
+Eval (Lambda x body) env = Closure x body env
+Eval (App f val) env2 = 
+    let (Closure x body env1) = ClosureOf (Eval f env2) in
+    let v = Eval val env2 in
+    Eval body (x, v):env1
+
+Fact n = LetRecIn "f" "n" (
+        If ((Var "n") `Eq` (Const 0))
+            (Const 1)
+            ((Var "n") `Times` (App (Var "f") ((Var "n") `Minus` (Const 1))))
+    ) (App (Var "f") (Const n))
+
+Prog2 = LetIn "g" (Lambda "x" ((Const 3) `Times` (Var "x"))) (App (Var "g") (Const 7))
+
+IsPrime n = LetRecIn "isPrime" "n" (
+        Lambda "i" (
+            If (((Var "i") `Times` (Var "i")) `Leq` (Var "n"))
+                (If (((Var "n") `Modulo` (Var "i")) `Eq` (Const 0))
+                    (Const False)
+                    (App (App (Var "isPrime") (Var "n")) ((Var "i") `Plus` (Const 1)))
+                )
+               (((Var "n") `Neq` (Const 1)))
+        )
+    ) (App (App (Var "isPrime") (Const n)) (Const 2))
+
+Main = Filter (\n -> Eval (IsPrime n) []) [1..1000]

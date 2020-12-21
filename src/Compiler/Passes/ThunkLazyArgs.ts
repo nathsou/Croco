@@ -48,7 +48,7 @@ const thunkTerm = (
     ann: LazinessAnnotations,
     addRule: (r: Rule) => void,
     counter: Counter,
-    exceptions: Term[]
+    exceptions: Var[]
 ): Term => {
     if (isVar(t)) return t;
 
@@ -65,7 +65,7 @@ const thunkTerm = (
 
         const thunkedArg = thunkTerm(arg, ann, addRule, counter, exceptions);
 
-        if ((islazy || isArgLazy(t.name, idx, ann)) && !exceptions.some(e => matches(arg, e))) {
+        if ((islazy || isArgLazy(t.name, idx, ann)) && !exceptions.some(v => arg === v)) {
 
             const thunked: LambdaExpr = {
                 type: 'lambda',

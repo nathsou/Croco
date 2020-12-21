@@ -3,13 +3,13 @@ Not False = True
 
 -- definition of a && b
 -- Only evaluates its second argument if necessary
-And True ?b = b
-And False ?_ = False
+And True b? = b
+And False _? = False
 
 -- definition of a || b
 -- Only evaluates its second argument if necessary
-Or True ?_ = True
-Or False ?b = b
+Or True _? = True
+Or False b? = b
 
 -- Eager version of &&
 EagerAnd False False = False

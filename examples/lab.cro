@@ -1,6 +1,19 @@
 
-Fact = Fix (\f n -> if n == 0 then 1 else n * (f (n - 1)))
+Main = if True then 1 else 2
 
-Forever = Forever
+-- import ./ProjectEuler/Utils/NumberTheory.cro
+-- import ./ProjectEuler/Utils/Iters.cro
 
-Main = IfThenElse False Forever (Fact 7)
+-- Fact = Fix (\f n -> if n == 0 then 1 else n * (f (n - 1)))
+
+-- A a? 0 = a 
+-- A 0 b? = b 
+
+-- M _? 0 = 0
+-- M 0 _? = 0
+-- M a? 1 = a
+-- M 1 b? = b
+
+-- -- a? `M` (b? `A` c?) = (a `M` b) `A` (a `M` c)
+-- -- Main :: [a] -> Int
+-- Main = LenIt (IterWhile (< 100000) Primes)
