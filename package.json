@@ -1,12 +1,13 @@
 {
   "name": "croco-lang",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Basic purely functional programming language based on term rewriting",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "check": "tsc --noEmit",
-    "build": "webpack --mode development"
+    "build": "npm run check && npm run buildNoCheck",
+    "buildNoCheck": "esbuild cli/croco.ts --bundle --platform=node --minify --outfile=dist/croco.js"
   },
   "dependencies": {
     "girafe": "^0.2.1",
@@ -15,10 +16,8 @@
   "devDependencies": {
     "@types/nearley": "^2.11.1",
     "@types/node": "^14.6.2",
-    "ts-loader": "^8.0.3",
-    "typescript": "^4.0.2",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12"
+    "esbuild": "^0.10.2",
+    "typescript": "^4.0.2"
   },
   "keywords": [
     "TRS",
