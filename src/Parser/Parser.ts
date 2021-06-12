@@ -3,12 +3,19 @@ import grammar from './grammar';
 import { default as importsGrammar } from './imports';
 import { Fun, Prog, showProg } from './Expr';
 import { putSemiColons } from './PutSemicolons';
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { resolve, dirname, join } from 'path';
 
 type Import = { type: 'import', path: string, rules: string[] };
 
-const preludePath = resolve('./Prelude/Prelude.cro');
+const CROCOPATH = process.env.CROCOPATH ?? '/usr/local/lib/node_modules/croco-lang';
+const preludePath = resolve(join(CROCOPATH, '/Prelude/Prelude.cro'));
+
+if (!existsSync(preludePath)) {
+    console.error(`please set the CROCOPATH environment variable to croco's installation folder`);
+    process.exit(1);
+}
+
 
 const prelude: Import = {
     type: 'import',

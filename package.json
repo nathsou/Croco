@@ -1,16 +1,18 @@
 {
   "name": "croco-lang",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "Basic purely functional programming language based on term rewriting",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "check": "tsc --noEmit",
     "build": "npm run check && npm run buildNoCheck",
-    "buildNoCheck": "esbuild cli/croco.ts --bundle --platform=node --minify --outfile=dist/croco.js"
+    "buildNoCheck": "esbuild cli/croco.ts --bundle --platform=node --minify --outfile=dist/croco.js && npm run insertShebang",
+    "insertShebang": "node insertShebang.js",
+    "prepublishOnly": "rm -rf /dist && npm run build"
   },
   "dependencies": {
-    "girafe": "^0.2.2",
+    "girafe": "^1.1.0",
     "nearley": "^2.19.6"
   },
   "devDependencies": {
