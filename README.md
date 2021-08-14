@@ -9,7 +9,7 @@ A simple purely functional programming language which compiles down to
 ## Installation
 
 ```bash
-npm install croco-lang
+npm install -g croco-lang
 ```
 
 ## Usage
